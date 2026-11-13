@@ -5,169 +5,220 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Econ 223 Kit</title>
 <meta name="description" content="Interactive companion to the ECON 223 presentation: Did globalization reduce global poverty (or did China)?">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f4f0e8;--card:#fff;--soft:#fbf8f2;--ink:#201c1c;--mute:#6a625d;--line:#e4dccd;--red:#c8102e;--red2:#8b0e20;--gold:#d4a94a;--gold2:#a77c1c;--slate:#4a5d8a;--rose:#e08b96;--teal:#1f7a78;--plum:#7b4a8c;--green:#2f7d4f;--shadow:0 1px 2px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.05);--fs:16px}
-:root[data-theme=dark]{--bg:#161214;--card:#221b1e;--soft:#1c1618;--ink:#f3ece4;--mute:#b3a9a0;--line:#3a2f33;--red:#ff5a70;--red2:#ff8795;--gold:#e0b45a;--gold2:#e8c36e;--slate:#8fa3d6;--rose:#e08b96;--teal:#4cc1be;--plum:#c093d4;--green:#6fcf97;--shadow:0 1px 2px rgba(0,0,0,.4)}
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Inter,system-ui,sans-serif;
+  --bg:#fff;--rail:#f5f5f7;--card:#fff;--soft:#f5f5f7;--ink:#1d1d1f;--mute:#6e6e73;--line:rgba(0,0,0,.1);
+  --fill:rgba(120,120,128,.12);--fill2:rgba(120,120,128,.22);--glass:rgba(255,255,255,.72);
+  --accent:#0071e3;--accent-soft:rgba(0,113,227,.1);
+  --red:#ff3b30;--red2:#d70015;--gold:#ff9f0a;--gold2:#c77700;--slate:#5e5ce6;--rose:#ff6482;--teal:#30b0c7;--plum:#af52de;--green:#28a745;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);--fs:16px}
+:root[data-theme=dark]{
+  --bg:#000;--rail:#141416;--card:#1c1c1e;--soft:#1c1c1e;--ink:#f5f5f7;--mute:#a1a1a6;--line:rgba(255,255,255,.14);
+  --fill:rgba(120,120,128,.24);--fill2:rgba(120,120,128,.4);--glass:rgba(22,22,24,.72);
+  --accent:#2997ff;--accent-soft:rgba(41,151,255,.16);
+  --red:#ff453a;--red2:#ff6961;--gold:#ff9f0a;--gold2:#ffb340;--slate:#7d7aff;--rose:#ff6482;--teal:#40c8e0;--plum:#bf5af2;--green:#30d158;--shadow:0 0 0 .5px rgba(255,255,255,.06)}
 *{box-sizing:border-box}
 html{font-size:var(--fs)}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.45;-webkit-font-smoothing:antialiased}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.47;letter-spacing:-.011em;-webkit-font-smoothing:antialiased;overflow:hidden}
 body.present{--fs:19px}
-h1,h2,h3,.serif{font-family:'Playfair Display',Georgia,serif;font-weight:800;letter-spacing:-.01em}
-button,input,select,textarea{font:inherit;color:inherit}
-a{color:var(--red)}
-.top{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:2px solid var(--red);box-shadow:var(--shadow)}
-.top-row{display:flex;align-items:center;gap:.75rem;padding:.55rem 1rem;flex-wrap:wrap}
-.brand{display:flex;align-items:baseline;gap:.5rem;cursor:pointer;margin-right:auto}
-.brand b{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:800}
-.brand b i{color:var(--red)}
-.brand span{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:800}
-.search{flex:1;min-width:180px;max-width:340px;display:flex;align-items:center;gap:.4rem;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.35rem .8rem;color:var(--mute);cursor:text}
-.search kbd{margin-left:auto;font-size:.7rem;border:1px solid var(--line);border-radius:4px;padding:0 .3rem}
-.pill{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:.3rem .8rem;cursor:pointer;font-weight:700;font-size:.85rem}
-.pill:hover{border-color:var(--red)}
-.pill.on{background:var(--red);border-color:var(--red);color:#fff}
-.sw{display:flex;flex-wrap:wrap;gap:.35rem 1.1rem;padding:.45rem 1rem .6rem;background:var(--soft);border-top:1px solid var(--line);align-items:center;font-size:.85rem}
-.sw.flash{animation:flash 1.2s ease 2}
-@keyframes flash{50%{background:rgba(212,169,74,.45)}}
-.sw .lab{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:800;margin-right:.35rem}
-.sw .g{display:flex;align-items:center;gap:.2rem}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--card)}
-.seg button{border:0;background:transparent;padding:.25rem .65rem;cursor:pointer;font-weight:700;font-size:.82rem;border-right:1px solid var(--line)}
-.seg button:last-child{border-right:0}
-.seg button.on{background:var(--ink);color:var(--bg)}
-.rng{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem}
-.rng .rl{font-weight:700;min-width:max-content}
-.rng input[type=range]{accent-color:var(--red);width:150px;max-width:44vw}
-.rng output{font-variant-numeric:tabular-nums;min-width:3.2em;font-weight:800;color:var(--red2)}
-main{max-width:1180px;margin:0 auto;padding:1rem 1rem 4rem}
-.hero{padding:1.6rem 0 .6rem}
-.hero .eyebrow{font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--red);font-weight:800}
-.hero h1{font-size:clamp(1.9rem,4.4vw,3.1rem);line-height:1.08;margin:.3rem 0 .6rem}
-.hero h1 em{color:var(--red)}
-.hero p{max-width:62ch;color:var(--mute);margin:.2rem 0}
-.filters{display:flex;flex-wrap:wrap;gap:.4rem;margin:1rem 0 .4rem;align-items:center}
-.filters .lab{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:800;margin:0 .3rem 0 .6rem}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.85rem;margin-top:.8rem}
-.sec-h{grid-column:1/-1;display:flex;align-items:baseline;gap:.7rem;margin-top:1.2rem;padding-bottom:.35rem;border-bottom:1px solid var(--line)}
-.sec-h h2{margin:0;font-size:1.25rem}
-.sec-h span{color:var(--mute);font-size:.85rem}
-.card{position:relative;background:var(--card);border:1px solid var(--line);border-top:4px solid var(--red);border-radius:8px;padding:.8rem .9rem .75rem;cursor:pointer;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:.3rem;transition:transform .12s,border-color .12s}
-.card:hover{transform:translateY(-2px);border-top-color:var(--gold)}
-.card:focus-visible{outline:3px solid var(--gold)}
-.card .nm{display:flex;gap:.5rem;align-items:center;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
-.card .nm .no{background:var(--ink);color:var(--bg);border-radius:4px;padding:0 .4rem}
-.card h3{margin:0;font-size:1.06rem;line-height:1.2}
-.card p{margin:0;font-size:.88rem;color:var(--mute)}
-.card .tags{margin-top:auto;display:flex;gap:.35rem;flex-wrap:wrap;padding-top:.35rem}
-.tag{font-size:.68rem;font-weight:800;border-radius:4px;padding:.05rem .4rem;background:var(--soft);border:1px solid var(--line);color:var(--mute)}
-.tag.t-chart{color:var(--slate)}.tag.t-sim{color:var(--teal)}.tag.t-game{color:var(--plum)}.tag.t-map{color:var(--green)}.tag.t-tool{color:var(--gold2)}
-.star{position:absolute;right:.5rem;top:.35rem;border:0;background:transparent;font-size:1.1rem;cursor:pointer;color:var(--mute)}
-.star.on{color:var(--gold2)}
-.empty{grid-column:1/-1;padding:2rem;text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:8px}
-/* module view */
-.mv-head{display:flex;flex-direction:column;gap:.3rem;padding:.6rem 0 .8rem;border-bottom:1px solid var(--line);margin-bottom:.9rem}
-.mv-bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-.mv-bar .sp{flex:1}
-.mv-head h2{margin:0;font-size:clamp(1.4rem,3vw,2rem)}
-.mv-head .one{font-size:1.05rem;color:var(--mute);max-width:75ch;margin:0}
-.mv-head .when{font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
-.stage{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem;box-shadow:var(--shadow)}
-.ctl{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin-bottom:.8rem}
-.ctl .lab{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:800}
-.row{display:flex;gap:1rem;flex-wrap:wrap}
+h1,h2,h3,.serif{font-family:var(--font);font-weight:700;letter-spacing:-.025em}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:var(--accent-soft)}
+/* ---------- app shell ---------- */
+.app{display:grid;grid-template-columns:300px 1fr;grid-template-rows:52px 1fr;height:100%}
+.top{grid-column:1/3;display:flex;align-items:center;gap:.5rem;padding:0 1rem;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);border-bottom:.5px solid var(--line);position:relative;z-index:30}
+.brand{font-weight:600;font-size:1.02rem;letter-spacing:-.02em;cursor:pointer;margin-right:auto;white-space:nowrap}
+.brand i{font-style:normal;color:var(--mute);font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:.4rem;border:0;background:var(--fill);border-radius:980px;padding:.34rem .85rem;cursor:pointer;font-weight:500;font-size:.82rem;white-space:nowrap;transition:background .15s}
+.pill:hover{background:var(--fill2)}
+.pill.on{background:var(--accent);color:#fff}
+.pill.ghost{background:transparent}
+.pill.ghost:hover{background:var(--fill)}
+.pill svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.menu{display:none}
+.side{grid-row:2;overflow-y:auto;background:var(--rail);border-right:.5px solid var(--line);padding:.75rem .7rem 3rem}
+.blk{background:var(--card);border-radius:14px;margin:0 0 .6rem;padding:.6rem .6rem .65rem;box-shadow:var(--shadow)}
+.blk.cur{box-shadow:0 0 0 1.5px var(--accent)}
+.bh{display:flex;gap:.55rem;align-items:baseline;margin:.05rem .15rem .5rem}
+.bh .sn{font-weight:700;font-size:1.05rem;line-height:1;letter-spacing:-.02em;min-width:1.1rem}
+.bh .t{font-size:.76rem;font-weight:600;color:var(--mute);line-height:1.25;flex:1}
+.bh .c{font-size:.7rem;color:var(--mute);font-weight:500}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem}
+.mt{position:relative;aspect-ratio:4/3;background:var(--fill);border-radius:8px;padding:.22rem .32rem .26rem;font-size:.62rem;line-height:1.15;font-weight:600;overflow:hidden;color:var(--ink);text-decoration:none!important;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;transition:background .12s}
+.mt .n{position:absolute;top:.18rem;left:.3rem;font-size:.58rem;color:var(--mute);font-weight:600}
+.mt span.tt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mt:hover{background:var(--fill2)}
+.mt:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.mt.on{background:var(--accent);color:#fff}
+.mt.on .n{color:rgba(255,255,255,.8)}
+.view{grid-row:2;min-width:0;overflow-y:auto;padding:2rem 2.6rem 4rem;background:var(--bg)}
+.slide{max-width:1020px;margin:0 auto}
+.eyebrow{display:flex;gap:.5rem;align-items:center;font-size:.78rem;color:var(--mute);font-weight:500}
+.eyebrow .sp{flex:1}
+.eyebrow .k{color:var(--accent);font-weight:600}
+.eyebrow button{border:0;background:transparent;color:var(--accent);cursor:pointer;font-weight:500;font-size:.8rem;padding:0}
+.slide h2{font-size:clamp(1.9rem,3.6vw,2.7rem);line-height:1.08;margin:.4rem 0 .5rem;font-weight:700;letter-spacing:-.034em}
+.slide .one{margin:0 0 1.5rem;font-size:1.12rem;line-height:1.4;color:var(--mute);max-width:66ch;letter-spacing:-.014em}
+.stage{padding:0}
+.notes{max-width:1020px;margin:2rem auto 0;border-top:.5px solid var(--line);padding-top:.4rem}
+.notes summary{cursor:pointer;font-size:.85rem;font-weight:600;color:var(--mute);padding:.55rem 0;list-style:none}
+.notes summary::-webkit-details-marker{display:none}
+.notes summary::before{content:'›';display:inline-block;width:1rem;transition:transform .15s}
+.notes[open] summary::before{transform:rotate(90deg)}
+.notes .in{display:flex;flex-direction:column;gap:.8rem;padding:.2rem 0 1rem}
+.srcrow{display:flex;gap:.3rem;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--mute)}
+.claim{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.claim>div{background:var(--soft);border-radius:14px;padding:.8rem 1rem;font-size:.92rem}
+.claim h4{margin:0 0 .3rem;font-size:.74rem;font-weight:600;color:var(--mute);display:flex;align-items:center;gap:.4rem}
+.claim h4::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+.devil{background:rgba(255,59,48,.07);border-radius:14px;padding:.8rem 1rem;font-size:.92rem}
+.devil h4{margin:0 0 .25rem;color:var(--red2);font-size:.74rem;font-weight:600}
+/* ---------- settings panel ---------- */
+.setp{position:absolute;right:1rem;top:58px;width:min(360px,92vw);background:var(--card);border-radius:18px;box-shadow:0 0 0 .5px var(--line),0 24px 60px rgba(0,0,0,.2);padding:1.1rem;display:none;flex-direction:column;gap:1rem;z-index:50}
+.setp.open{display:flex}
+.setp.flash{animation:flash 1.2s ease 2}
+@keyframes flash{50%{box-shadow:0 0 0 4px var(--accent-soft),0 24px 60px rgba(0,0,0,.2)}}
+.setp .lab{font-size:.74rem;font-weight:600;color:var(--mute);display:block;margin-bottom:.35rem}
+.setp .yrs{display:flex;flex-direction:column;gap:.2rem}.setp .yrs .rng{justify-content:space-between}
+.setp .rng input[type=range]{width:190px}
+/* ---------- controls ---------- */
+.seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;gap:1px}
+.seg button{border:0;background:transparent;padding:.26rem .8rem;cursor:pointer;font-weight:500;font-size:.82rem;border-radius:7px;transition:background .15s,box-shadow .15s}
+.seg button.on{background:var(--card);box-shadow:0 0 0 .5px rgba(0,0,0,.04),0 2px 5px rgba(0,0,0,.14)}
+:root[data-theme=dark] .seg button.on{background:#636366}
+.rng{display:inline-flex;align-items:center;gap:.6rem;font-size:.85rem}
+.rng .rl{font-weight:500;min-width:max-content;color:var(--ink)}
+.rng output{font-variant-numeric:tabular-nums;min-width:3.2em;font-weight:600;color:var(--mute)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:28px;background:transparent;cursor:pointer;margin:0;width:150px;max-width:44vw;--p:50%}
+input[type=range]:focus{outline:none}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p),var(--fill2) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-9px;border-radius:50%;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.28)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--fill2)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.1),0 2px 6px rgba(0,0,0,.28)}
+input[type=checkbox]{accent-color:var(--accent);width:1rem;height:1rem}
+.ctl{display:flex;flex-wrap:wrap;gap:.7rem 1.3rem;align-items:center;margin-bottom:1rem}
+.ctl .lab{font-size:.82rem;font-weight:500;color:var(--mute)}
+.row{display:flex;gap:1.1rem;flex-wrap:wrap}
 .row>*{flex:1 1 320px;min-width:0}
 .col{display:flex;flex-direction:column;gap:.6rem}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem;margin-top:.8rem}
-.stat{border-left:5px solid var(--red);background:var(--soft);padding:.45rem .7rem;border-radius:0 6px 6px 0}
-.stat b{display:block;font-family:'Playfair Display',serif;font-size:1.55rem;line-height:1.1;color:var(--red2)}
-.stat span{font-size:.8rem;color:var(--mute)}
-.stat.s2{border-color:var(--slate)}.stat.s2 b{color:var(--slate)}
-.stat.s3{border-color:var(--gold)}.stat.s3 b{color:var(--gold2)}
-.stat.s4{border-color:var(--ink)}.stat.s4 b{color:var(--ink)}
-.note{background:var(--ink);color:var(--bg);border-left:5px solid var(--red);padding:.55rem .8rem;border-radius:0 6px 6px 0;font-size:.9rem;margin:.6rem 0}
-.note.soft{background:var(--soft);color:var(--ink);border-left-color:var(--gold)}
-.warn{background:rgba(212,169,74,.18);border:1px solid var(--gold);padding:.45rem .7rem;border-radius:6px;font-size:.85rem;margin:.5rem 0}
-.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:6px;padding:.35rem .8rem;font-weight:800;cursor:pointer;font-size:.85rem}
-.btn:hover{background:var(--red);border-color:var(--red);color:#fff}
-.btn.ghost{background:transparent;color:var(--ink)}
-.btn.ghost:hover{background:var(--soft);color:var(--red);border-color:var(--red)}
-.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn{border:0;background:var(--accent-soft);color:var(--accent);border-radius:980px;padding:.38rem .95rem;font-weight:500;cursor:pointer;font-size:.85rem;transition:background .15s,transform .1s}
+.btn:hover{background:rgba(0,113,227,.18)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:var(--fill);color:var(--ink)}
+.btn.ghost:hover{background:var(--fill2)}
+.btn.red{background:var(--accent);color:#fff}
+.btn.red:hover{filter:brightness(1.08)}
 .btn[disabled]{opacity:.4;pointer-events:none}
-input[type=text],input[type=number],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:.3rem .5rem}
-textarea{width:100%;min-height:4.5rem}
+input[type=text],input[type=number],select,textarea{background:var(--fill);border:0;border-radius:9px;padding:.4rem .7rem;outline:none;transition:box-shadow .15s}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--accent)}
+select{-webkit-appearance:none;appearance:none;padding-right:2rem;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%236e6e73' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center}
+textarea{width:100%;min-height:4.5rem;resize:vertical}
+/* tiles */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.7rem;margin-top:1.1rem}
+.stat{--c:var(--red);background:var(--soft);border-radius:16px;padding:.9rem 1.05rem 1rem}
+.stat b{display:block;font-size:1.75rem;font-weight:600;letter-spacing:-.035em;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat span{display:flex;gap:.45rem;align-items:baseline;margin-top:.4rem;font-size:.8rem;color:var(--mute);line-height:1.3}
+.stat span::before{content:'';flex:none;width:7px;height:7px;border-radius:50%;background:var(--c);transform:translateY(-1px)}
+.stat.s2{--c:var(--slate)}.stat.s3{--c:var(--gold)}.stat.s4{--c:var(--ink)}
+.stat div{margin-top:.4rem}
+.note{background:var(--soft);color:var(--ink);border-radius:14px;padding:.75rem 1rem;font-size:.9rem;margin:1rem 0 0;line-height:1.45}
+.note.soft{color:var(--mute)}
+.warn{background:rgba(255,159,10,.12);border-radius:12px;padding:.6rem .9rem;font-size:.88rem;margin:.7rem 0}
+/* ---------- charts ---------- */
 .chart{position:relative}
 .chart svg{display:block;width:100%;height:auto;overflow:visible}
-.stage svg text,.chart text{font-family:Nunito,sans-serif;fill:var(--mute);font-size:11.5px}
-.stage svg .ax,.chart .ax{stroke:var(--mute);stroke-width:1}
-.stage svg .gr,.chart .gr{stroke:var(--line);stroke-width:1}
-.stage svg .lbl-in,.chart .lbl-in{fill:var(--ink);font-weight:700}
-.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.78rem;padding:.35rem .55rem;border-radius:6px;z-index:5;display:none;white-space:nowrap;box-shadow:var(--shadow)}
-.tip b{display:block}
-.legend{display:flex;flex-wrap:wrap;gap:.3rem .9rem;margin-top:.3rem;font-size:.8rem}
-.legend button{border:0;background:transparent;cursor:pointer;display:flex;gap:.35rem;align-items:center;padding:0;font-weight:700}
+.stage svg text,.chart text{font-family:var(--font);fill:var(--mute);font-size:11.5px;letter-spacing:0}
+.stage svg .ax,.chart .ax{stroke:var(--mute);stroke-width:.8;stroke-opacity:.6}
+.stage svg .gr,.chart .gr{stroke:var(--line);stroke-width:.8}
+.stage svg .lbl-in,.chart .lbl-in{fill:var(--ink);font-weight:600}
+.tip{position:absolute;pointer-events:none;background:rgba(29,29,31,.92);color:#fff;font-size:.78rem;padding:.4rem .65rem;border-radius:10px;z-index:5;display:none;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.25);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.tip b{display:block;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:.3rem 1rem;margin-top:.5rem;font-size:.8rem}
+.legend button{border:0;background:transparent;cursor:pointer;display:flex;gap:.4rem;align-items:center;padding:0;font-weight:500;color:var(--ink)}
 .legend button.off{opacity:.35;text-decoration:line-through}
 .legend i{width:14px;height:4px;border-radius:2px;display:inline-block}
-.panel{border:1px solid var(--line);border-radius:8px;padding:.7rem;background:var(--soft)}
-.panel h4{margin:.1rem 0 .4rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
-table.t{border-collapse:collapse;width:100%;font-size:.86rem}
-table.t th,table.t td{border-bottom:1px solid var(--line);padding:.3rem .5rem;text-align:right}
+.panel{border-radius:14px;padding:.8rem 1rem;background:var(--soft)}
+.panel h4{margin:.1rem 0 .4rem;font-size:.8rem;font-weight:600;color:var(--mute)}
+table.t{border-collapse:collapse;width:100%;font-size:.88rem}
+table.t th,table.t td{border-bottom:.5px solid var(--line);padding:.45rem .6rem;text-align:right}
 table.t th:first-child,table.t td:first-child{text-align:left}
-table.t th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
-table.t tr.hl td{background:rgba(200,16,46,.08);font-weight:800}
-.chip{display:inline-flex;align-items:center;gap:.2rem;font-size:.68rem;font-weight:800;border:1px solid var(--gold);color:var(--gold2);background:rgba(212,169,74,.12);border-radius:999px;padding:0 .45rem;cursor:pointer;margin-left:.25rem;vertical-align:middle}
-.chip.bad{border-color:var(--red);color:var(--red)}
-.chip.ok{border-color:var(--green);color:var(--green)}
-.pop{position:absolute;z-index:60;max-width:340px;background:var(--card);color:var(--ink);border:2px solid var(--gold);border-radius:8px;padding:.6rem .75rem;font-size:.82rem;box-shadow:0 8px 28px rgba(0,0,0,.25)}
-.pop b{display:block;margin-bottom:.15rem}
-.mv-foot{margin-top:1rem;display:flex;flex-direction:column;gap:.6rem}
-.srcrow{display:flex;gap:.2rem;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--mute)}
-.claim{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-.claim>div{border:1px solid var(--line);border-radius:8px;padding:.6rem .75rem;background:var(--card)}
-.claim .y{border-top:4px solid var(--green)}.claim .n{border-top:4px solid var(--red)}
-.claim h4{margin:0 0 .25rem;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}
-.devil{border:2px dashed var(--red);border-radius:8px;padding:.6rem .8rem;background:rgba(200,16,46,.06)}
-.devil h4{margin:0 0 .2rem;color:var(--red);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}
-.nav2{display:flex;justify-content:space-between;gap:.6rem}
-abbr.gl{text-decoration:underline dotted var(--gold2);cursor:help;position:relative}
-abbr.gl:hover::after,abbr.gl:focus::after{content:attr(data-tip);position:absolute;left:0;top:1.4em;background:var(--ink);color:var(--bg);font-size:.78rem;padding:.4rem .55rem;border-radius:6px;z-index:40;width:max-content;max-width:280px;font-weight:600;text-decoration:none;white-space:normal;line-height:1.35}
-.pal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:flex;justify-content:center;align-items:flex-start;padding-top:12vh}
-.pal{width:min(620px,92vw);background:var(--card);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;border:2px solid var(--red)}
-.pal input{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:.9rem 1rem;font-size:1.1rem;outline:none}
-.pal ul{list-style:none;margin:0;padding:0;max-height:52vh;overflow:auto}
-.pal li{padding:.5rem 1rem;cursor:pointer;display:flex;gap:.6rem;align-items:baseline;border-bottom:1px solid var(--line)}
-.pal li.sel,.pal li:hover{background:var(--soft)}
-.pal li .no{font-size:.7rem;font-weight:800;background:var(--ink);color:var(--bg);border-radius:4px;padding:0 .35rem}
+table.t th{font-size:.74rem;font-weight:600;color:var(--mute)}
+table.t tr.hl td{background:var(--soft);font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:.2rem;font-size:.7rem;font-weight:600;color:var(--mute);background:var(--fill);border-radius:980px;padding:.05rem .55rem;cursor:pointer;margin-left:.25rem;vertical-align:middle}
+.chip:hover{background:var(--fill2)}
+.chip.bad{color:var(--red2);background:rgba(255,59,48,.1)}
+.chip.ok{color:var(--green);background:rgba(40,167,69,.12)}
+.pop{position:absolute;z-index:60;max-width:340px;background:var(--card);color:var(--ink);border-radius:14px;padding:.8rem 1rem;font-size:.82rem;box-shadow:0 0 0 .5px var(--line),0 16px 44px rgba(0,0,0,.22)}
+.pop b{display:block;margin-bottom:.2rem;font-weight:600}
+abbr.gl{text-decoration:underline dotted var(--mute);text-underline-offset:3px;cursor:help;position:relative}
+abbr.gl:hover::after,abbr.gl:focus::after{content:attr(data-tip);position:absolute;left:0;top:1.5em;background:rgba(29,29,31,.94);color:#fff;font-size:.78rem;padding:.45rem .65rem;border-radius:10px;z-index:40;width:max-content;max-width:280px;font-weight:500;text-decoration:none;white-space:normal;line-height:1.35}
+/* objection cards (module 20) */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.8rem;margin-top:.8rem}
+.card{position:relative;background:var(--soft);border-radius:18px;padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.4rem}
+.card h3{margin:0;font-size:1.02rem;line-height:1.25;font-weight:600}
+.card p{margin:0;font-size:.9rem;color:var(--mute)}
+.card .tags{margin-top:auto;display:flex;gap:.35rem;flex-wrap:wrap;padding-top:.5rem}
+kbd{font-family:var(--font);font-size:.7rem;border-radius:5px;padding:.02rem .35rem;background:var(--fill);color:var(--mute)}
+/* ---------- palette ---------- */
+.pal-bg{position:fixed;inset:0;background:rgba(0,0,0,.3);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:80;display:flex;justify-content:center;align-items:flex-start;padding-top:13vh}
+.pal{width:min(620px,92vw);background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(30px);backdrop-filter:saturate(180%) blur(30px);border-radius:18px;box-shadow:0 0 0 .5px var(--line),0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.pal input{width:100%;border:0;border-radius:0;background:transparent;border-bottom:.5px solid var(--line);padding:1rem 1.2rem;font-size:1.15rem;outline:none!important;box-shadow:none!important}
+.pal ul{list-style:none;margin:0;padding:.4rem;max-height:52vh;overflow:auto}
+.pal li{padding:.55rem .8rem;cursor:pointer;display:flex;gap:.7rem;align-items:baseline;border-radius:9px}
+.pal li.sel,.pal li:hover{background:var(--accent);color:#fff}
+.pal li.sel small,.pal li:hover small,.pal li.sel .no,.pal li:hover .no{color:rgba(255,255,255,.8)}
+.pal li .no{font-size:.72rem;font-weight:600;color:var(--mute);min-width:1.4rem}
 .pal li small{color:var(--mute);margin-left:auto;white-space:nowrap}
-.hud{position:fixed;right:.8rem;bottom:.8rem;z-index:70;background:var(--ink);color:var(--bg);border-radius:10px;padding:.5rem .7rem;display:none;gap:.5rem;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+/* ---------- presenter ---------- */
+.hud{position:fixed;right:1rem;bottom:1rem;z-index:70;background:rgba(29,29,31,.88);color:#fff;border-radius:16px;padding:.5rem .6rem;display:none;gap:.4rem;align-items:center;box-shadow:0 12px 40px rgba(0,0,0,.35);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
 body.present .hud{display:flex}
-.hud button{border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;border-radius:6px;padding:.2rem .55rem;cursor:pointer;font-weight:700;font-size:.8rem}
-.hud button.on{background:var(--red);border-color:var(--red)}
-.hud .time{font-variant-numeric:tabular-nums;font-weight:800;min-width:3.6em;text-align:center}
+.hud button{border:0;background:rgba(255,255,255,.14);color:inherit;border-radius:980px;padding:.28rem .7rem;cursor:pointer;font-weight:500;font-size:.8rem}
+.hud button:hover{background:rgba(255,255,255,.24)}
+.hud button.on{background:var(--accent)}
+.hud .time{font-variant-numeric:tabular-nums;font-weight:600;min-width:3.6em;text-align:center}
 #laser{position:fixed;width:18px;height:18px;border-radius:50%;background:rgba(255,30,60,.85);box-shadow:0 0 14px 6px rgba(255,30,60,.55);pointer-events:none;z-index:90;display:none;transform:translate(-50%,-50%)}
 #ink{position:fixed;inset:0;z-index:65;display:none;touch-action:none;cursor:crosshair}
+body.present .side,body.present .top,body.present .notes{display:none}
+body.present .app{grid-template-columns:1fr;grid-template-rows:1fr}
+body.present .view{grid-row:1;padding:2.2rem 3.4rem}
+body.present .slide{max-width:1180px}
+/* ---------- misc widgets used by modules ---------- */
 .cloud{display:flex;flex-wrap:wrap;gap:.2rem .9rem;align-items:center;justify-content:center;min-height:200px;padding:1rem}
-.cloud span{font-family:'Playfair Display',serif;font-weight:800;line-height:1}
+.cloud span{font-weight:700;letter-spacing:-.03em;line-height:1}
 .drop{cursor:crosshair;touch-action:none;user-select:none}
-.dot{display:inline-block;width:11px;height:11px;border-radius:2px;margin:1px}
+.dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin:1px}
 .waffle{display:flex;flex-wrap:wrap;max-width:100%}
-.sector{display:flex;flex-wrap:wrap;gap:3px;padding:.5rem;border:1px dashed var(--line);border-radius:8px;min-height:90px;transition:all .4s}
 .worker{width:12px;height:12px;border-radius:50%;transition:all .6s}
 .ribbon{display:flex;gap:.7rem;overflow-x:auto;padding:.5rem .2rem 1rem;scroll-snap-type:x proximity}
-.ribbon .ev{flex:0 0 230px;scroll-snap-align:start;border:1px solid var(--line);border-top:4px solid var(--red);border-radius:8px;padding:.6rem .7rem;background:var(--card)}
-.ribbon .ev b.y{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--red2);display:block}
-.ribbon .ev.dim{opacity:.55}
-.drag{touch-action:none}
+.ribbon .ev{flex:0 0 230px;scroll-snap-align:start;background:var(--soft);border-radius:16px;padding:.9rem 1rem}
+.ribbon .ev b.y{font-size:1.7rem;font-weight:700;letter-spacing:-.03em;display:block}
 .scroll-x{overflow-x:auto}
-@media (max-width:640px){.claim{grid-template-columns:1fr}.row>*{flex-basis:100%}.sw{gap:.3rem .7rem}}
-@media print{.top,.hud,.nav2{display:none}}
+/* ---------- small screens: left rail becomes a drawer ---------- */
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .top{grid-column:1;gap:.4rem;overflow:hidden}
+  .top .sum,.top kbd,.top .pill.ghost,.top .lbl{display:none}
+  .menu{display:inline-flex}
+  .side{position:fixed;left:0;top:52px;bottom:0;width:300px;z-index:40;transform:translateX(-102%);transition:transform .25s;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  body.nav-open .side{transform:none}
+  .view{grid-column:1;padding:1.2rem 1rem 4rem}
+  .claim{grid-template-columns:1fr}
+  .row>*{flex-basis:100%}
+}
+@media print{.top,.side,.hud,.notes{display:none}}
 </style>
 </head>
 <body>
-<header class="top" id="top"></header>
-<main id="main"></main>
+<div class="app">
+  <header class="top" id="top"></header>
+  <nav class="side" id="side" aria-label="Interactives"></nav>
+  <main class="view" id="view"></main>
+</div>
 <div class="hud" id="hud"></div>
 <div id="laser"></div>
 <canvas id="ink"></canvas>
@@ -264,7 +315,8 @@ function range(label, o, on) {
   const out = h('output');
   const inp = h('input', { type: 'range', min: o.min, max: o.max, step: o.step || 1, value: o.value });
   const fmt = o.fmt || (v => v);
-  const upd = () => { out.textContent = fmt(+inp.value); };
+  const paint = () => { const mn = +inp.min, mx = +inp.max; inp.style.setProperty('--p', ((+inp.value - mn) / ((mx - mn) || 1) * 100) + '%'); };
+  const upd = () => { out.textContent = fmt(+inp.value); paint(); };
   inp.addEventListener('input', () => { upd(); on && on(+inp.value); });
   upd();
   const w = h('label', { class: 'rng' }, label ? h('span', { class: 'rl' }, label) : null, inp, out);
@@ -1047,7 +1099,7 @@ M({
       const rate = rateOf(S_china(S.line));
       items.forEach(e => {
         const r = e.y >= D.Y0 ? rate[yi(e.y)] : null;
-        rail.append(h('div', { class: 'ev', style: { borderTopColor: EVC[e.k] || 'var(--ink)' } }, h('b', { class: 'y' }, e.y), h('b', null, e.t), h('div', { style: { fontSize: '.85rem', color: 'var(--mute)', margin: '.2rem 0 .4rem' } }, e.d),
+        rail.append(h('div', { class: 'ev', style: { borderTopColor: EVC[e.k] || 'var(--ink)' } }, h('b', { class: 'y' }, e.y), h('b', { style: { color: EVC[e.k] || 'inherit' } }, e.t), h('div', { style: { fontSize: '.85rem', color: 'var(--mute)', margin: '.2rem 0 .4rem' } }, e.d),
           h('div', { style: { fontSize: '.78rem', fontWeight: 800 } }, r == null ? 'PIP series starts in 1981' : `China below ${lineName(S.line)}: ${fP(r, 1)}`),
           r == null ? null : h('div', { style: { height: '8px', background: 'var(--line)', borderRadius: '4px', marginTop: '.2rem' } }, h('div', { style: { height: '8px', width: clamp(r, 0, 100) + '%', background: 'var(--red)', borderRadius: '4px' } }))));
       });
@@ -1337,7 +1389,7 @@ M({
     const ch = lineChart(viz, { series: [] });
     function draw() {
       sg.set(S.mode);
-      del.textContent = S.china ? '✂ Delete China' : '↩ Bring China back';
+      del.textContent = S.china ? 'Delete China' : 'Bring China back';
       const w = S_world(S.line), c = S_china(S.line), r = S_rest(S.line);
       const sr = [];
       if (S.china) { sr.push({ name: 'World', color: C.slate, pts: ptsOf(V(w)), w: 3 }); sr.push({ name: 'China', color: C.red, pts: ptsOf(V(c)) }); }
@@ -1470,7 +1522,7 @@ M({
     const ch = lineChart(viz, { series: [] });
     function draw() {
       ch.update({ series: [{ name: 'China poverty rate', color: C.red, pts: ptsOf(chinaRate()), area: true }], xmin: 1978, xmax: 2022, ymax: 100, yfmt: v => v + '%', tipfmt: v => v.toFixed(1) + '%', markers: EV.filter(e => on.has(e.y)).map((e, i) => ({ x: e.y, label: e.y + ' ' + e.t, color: EVC[e.k], row: i % 5 })), label: 'Poverty rate with events', h: 380 });
-      out.innerHTML = ''; EV.filter(e => on.has(e.y)).forEach(e => out.append(h('div', { class: 'stat', style: { borderColor: EVC[e.k] } }, h('b', { style: { fontSize: '1.1rem' } }, e.y + ' · ' + e.t), h('span', null, e.d))));
+      out.innerHTML = ''; EV.filter(e => on.has(e.y)).forEach(e => out.append(h('div', { class: 'stat', style: '--c:' + EVC[e.k] }, h('b', { style: { fontSize: '1.1rem' } }, e.y + ' · ' + e.t), h('span', null, e.d))));
     }
     ctx.watch(draw); draw();
   }
@@ -2570,12 +2622,12 @@ M({
   devil: 'A claim you describe as falsifiable but never test is just a slogan. Mark honestly which tests are only partly done.',
   mount(host) {
     const C_ = store.get('falsify', null) || [
-      { t: 'Test 1 · Trade alone explains China\'s fall, even after controlling for reforms', count: 'A cross-country or within-China design that holds reform fixed and still finds a large trade effect.', have: 'Omitted-variable lab (77) and openness scatter (15) show the logic; no controlled estimate yet.', st: 'Partial', links: [77, 15, 78] },
-      { t: 'Test 2 · Countries without reforms matched China through globalization alone', count: 'A country with open trade and little reform that cut poverty as much as China did.', have: 'Case cards (18) for Vietnam, India, Bangladesh and Mexico; each needs a verdict.', st: 'Partial', links: [18, 15, 74] }];
+      { t: 'Test 1 · Trade alone explains China\'s fall, even after controlling for reforms', count: 'A cross-country or within-China design that holds reform fixed and still finds a large trade effect.', have: 'The Omitted-variable-bias lab and the Openness vs poverty scatter show the logic; no controlled estimate yet.', st: 'Partial', links: [77, 15, 78] },
+      { t: 'Test 2 · Countries without reforms matched China through globalization alone', count: 'A country with open trade and little reform that cut poverty as much as China did.', have: 'The "Try to prove us wrong" cases (Vietnam, India, Bangladesh, Mexico); each needs a verdict.', st: 'Partial', links: [18, 15, 74] }];
     const box = h('div', { class: 'col' }); host.append(box);
     function draw() {
       box.innerHTML = ''; C_.forEach(c => box.append(h('div', { class: 'panel' }, h('h3', { style: { margin: '.1rem 0 .4rem' } }, c.t), h('p', null, h('b', null, 'Evidence that would count: '), c.count), h('p', null, h('b', null, 'What the kit has: '), c.have),
-        h('div', { class: 'ctl' }, lab('Status'), sel(['Not tested', 'Partial', 'Passed', 'Failed'].map(v => [v, v]), c.st, v => { c.st = v; store.set('falsify', C_); }), ...c.links.map(n => btn('Open #' + n, () => go('m' + n), 'ghost'))))));
+        h('div', { class: 'ctl' }, lab('Status'), sel(['Not tested', 'Partial', 'Passed', 'Failed'].map(v => [v, v]), c.st, v => { c.st = v; store.set('falsify', C_); }), ...c.links.map(n => btn('Open: ' + modById(n).title, () => go('m' + n), 'ghost'))))));
     }
     draw();
   }
@@ -2670,7 +2722,7 @@ M({
   devil: 'A shift toward your position after a presentation is expected; ask whether the room moved because of evidence or because of delivery.',
   mount(host) {
     const { ctl, out } = std(host); const tb = tugBar(host, { interactive: false }); host.insertBefore(tb.bar, out);
-    function paint() { const T = store.get('tug', { votes: [], before: null, after: null }); tb.render({ before: T.before, after: T.after }); setStats(out, [[T.before == null ? '–' : Math.round(T.before), 'BEFORE', 's3'], [T.after == null ? '–' : Math.round(T.after), 'AFTER', 's4'], [T.before != null && T.after != null ? fSign(T.after - T.before, 0) + ' pts' : '–', 'shift toward "China did it" (positive)', '']]); if (T.before == null && T.after == null) out.append(note('Nothing locked yet. Run the Tug-of-war bar (#29) at the start and end of the presentation.', true)); }
+    function paint() { const T = store.get('tug', { votes: [], before: null, after: null }); tb.render({ before: T.before, after: T.after }); setStats(out, [[T.before == null ? '–' : Math.round(T.before), 'BEFORE', 's3'], [T.after == null ? '–' : Math.round(T.after), 'AFTER', 's4'], [T.before != null && T.after != null ? fSign(T.after - T.before, 0) + ' pts' : '–', 'shift toward "China did it" (positive)', '']]); if (T.before == null && T.after == null) out.append(note('Nothing locked yet. Run the Tug-of-war bar at the start and end of the presentation.', true)); }
     ctl.append(btn('Refresh', paint, 'ghost'), btn('Open Tug-of-war', () => go('m29'), 'ghost')); paint();
   }
 });
@@ -2784,7 +2836,7 @@ M({
     const grid = h('div', { class: 'grid' }); viz.append(grid);
     function draw() {
       const q = inp.value.toLowerCase(); grid.innerHTML = '';
-      Q.filter(r => !q || (r[0] + r[1]).toLowerCase().includes(q)).forEach(r => grid.append(h('div', { class: 'card', style: { cursor: 'default' } }, h('h3', null, r[0]), h('p', { style: { color: 'var(--ink)' } }, r[1]), h('div', { class: 'tags' }, btn('Show me · #' + r[2], () => go('m' + r[2]), 'ghost')))));
+      Q.filter(r => !q || (r[0] + r[1]).toLowerCase().includes(q)).forEach(r => grid.append(h('div', { class: 'card', style: { cursor: 'default' } }, h('h3', null, r[0]), h('p', { style: { color: 'var(--ink)' } }, r[1]), h('div', { class: 'tags' }, btn('Show me →', () => go('m' + r[2]), 'ghost')))));
     }
     inp.addEventListener('input', draw); draw();
   }
@@ -2815,16 +2867,16 @@ M({
 /* ---------- kit-wide tools (slide 0) ---------- */
 M({
   n: 21, slide: 0, when: 'Always on (top bar)', type: 'tool', title: 'Global switches',
-  one: 'The bar at the top (poverty line, headcount or rate, China on or off, year range) drives every chart in the kit at once.',
+  one: 'The ⚙ settings at the top (poverty line, people or share, China on or off, year range) drive every chart at once.',
   kw: 'global controls top bar line mode china years', src: ['pip'],
   shows: 'Flip a switch and every module that uses it redraws; try it on this preview.', limits: 'A few modules (maths models, quizzes) ignore the switches by design.',
   devil: 'Changing the switches mid-sentence invites "did you pick the setting that suits you?". Say which setting you used and why.',
   mount(host, ctx) {
-    const { ctl, viz } = std(host); ctl.append(btn('Flash the controls', () => { const sw = $('.sw'); sw.classList.remove('flash'); void sw.offsetWidth; sw.classList.add('flash'); }, 'red'));
+    const { ctl, viz } = std(host); ctl.append(btn('Open settings', () => openSettings(), 'red'));
     const ch = lineChart(viz, { series: [] });
     function draw() { const c = S_china(S.line), r = S_rest(S.line); ch.update({ series: [...(S.china ? [{ name: 'China', color: C.red, pts: ptsOf(V(c)) }] : []), { name: 'Rest of world', color: C.slate, pts: ptsOf(V(r)) }], xmin: S.y0, xmax: S.y1, yfmt: yfmtMode(), tipfmt: tipfmtMode(), ytitle: ytitleMode(), label: 'Live preview of the global switches' }); }
     ctx.watch(draw); draw();
-    host.append(note('Change <b>Line</b>, <b>View</b>, <b>China</b> or the <b>years</b> in the top bar: this preview and every other module follows.', true));
+    host.append(note('Open <b>⚙ settings</b> in the top bar and change the line, count, China or years: this preview and every other chart follows.', true));
   }
 });
 
@@ -2862,7 +2914,7 @@ M({
   shows: 'A fast way to find a tool mid-presentation.', limits: 'Searches titles, one-liners and keywords.',
   devil: 'Typing in front of an audience is slower than it feels; open the module in advance.',
   mount(host) {
-    host.append(h('div', { class: 'ctl' }, btn('Open the palette now', () => openPalette(), 'red')), h('table', { class: 't' }, [['/', 'open the jump palette'], ['Esc', 'close palette, popovers, or the open module'], ['← →', 'previous / next module on the same slide'], ['P', 'toggle presenter mode'], ['D', 'toggle devil\'s advocate'], ['H', 'back to the gallery']].map(([k, d]) => h('tr', null, h('td', null, h('kbd', null, k)), h('td', { style: { textAlign: 'left' } }, d)))));
+    host.append(h('div', { class: 'ctl' }, btn('Open the palette now', () => openPalette(), 'red')), h('table', { class: 't' }, [['/', 'open the jump palette'], ['Esc', 'close the palette, settings or presenter mode'], ['← →', 'previous / next slide'], ['P', 'toggle presenter mode'], ['D', 'toggle devil\'s advocate']].map(([k, d]) => h('tr', null, h('td', null, h('kbd', null, k)), h('td', { style: { textAlign: 'left' } }, d)))));
   }
 });
 
@@ -2909,161 +2961,154 @@ M({
 
 M({
   n: 28, slide: 0, when: 'Before you present', type: 'tool', title: 'Hand-off mode',
-  one: 'Pin a set of modules for each teammate, then switch "View as" in the header so each person sees only their own tray.',
+  one: 'Pin a set of slides for each teammate, then choose their name under ⚙ settings so the left rail shows only their slides.',
   kw: 'teammates assign pins views ben richard tomas split', src: ['team'],
-  shows: 'Who is presenting which tools.', limits: 'Pins are stored in this browser only; share the page link and set them on each machine, or use the star on a card.',
+  shows: 'Who is presenting which tools.', limits: 'Pins are stored in this browser only, so set them on each machine.',
   devil: 'A tool that only one person knows how to run is a single point of failure: rehearse each other\'s.',
   mount(host, ctx) {
     const P = store.get('pins', { Ben: [], Richard: [], Tomas: [] }); const NAMES = Object.keys(P);
-    host.append(h('div', { class: 'ctl' }, btn('Auto-assign by slide order (editable)', () => { MODS.filter(m => m.slide > 0).sort((a, b) => a.slide - b.slide || a.n - b.n).forEach((m, i, arr) => { NAMES.forEach(nm => { P[nm] = P[nm].filter(x => x !== m.n); }); P[NAMES[Math.min(2, Math.floor(i / (arr.length / 3)))]].push(m.n); }); store.set('pins', P); draw(); }), btn('Clear all', () => { NAMES.forEach(nm => { P[nm] = []; }); store.set('pins', P); draw(); }, 'ghost')));
+    host.append(h('div', { class: 'ctl' }, btn('Auto-assign by slide order (editable)', () => { MODS.filter(m => m.slide > 0).forEach((m, i, arr) => { NAMES.forEach(nm => { P[nm] = P[nm].filter(x => x !== m.n); }); P[NAMES[Math.min(2, Math.floor(i / (arr.length / 3)))]].push(m.n); }); store.set('pins', P); draw(); }), btn('Clear all', () => { NAMES.forEach(nm => { P[nm] = []; }); store.set('pins', P); draw(); }, 'ghost')));
     const t = h('table', { class: 't' }); host.append(h('div', { class: 'scroll-x', style: { maxHeight: '60vh', overflow: 'auto' } }, t));
     function draw() {
       t.innerHTML = ''; t.append(h('tr', null, h('th', null, 'Module'), ...NAMES.map(n => h('th', null, n))));
-      MODS.slice().sort((a, b) => a.slide - b.slide || a.n - b.n).forEach(m => t.append(h('tr', null, h('td', { style: { textAlign: 'left' } }, `#${m.n} ${m.title}`), ...NAMES.map(nm => h('td', null, h('input', { type: 'checkbox', checked: P[nm].includes(m.n), onchange: e => { P[nm] = P[nm].filter(x => x !== m.n); if (e.target.checked) P[nm].push(m.n); store.set('pins', P); } }))))));
+      MODS.forEach(m => t.append(h('tr', null, h('td', { style: { textAlign: 'left' } }, `${m.pos}. ${m.title}`), ...NAMES.map(nm => h('td', null, h('input', { type: 'checkbox', checked: P[nm].includes(m.n), onchange: e => { P[nm] = P[nm].filter(x => x !== m.n); if (e.target.checked) P[nm].push(m.n); store.set('pins', P); } }))))));
     }
     draw();
   }
 });
 
 /* =====================================================================
-   BOOT — header, global switches, gallery, module view, router,
-   palette, presenter tools, keyboard shortcuts
+   BOOT — slide-deck shell: thumbnail rail (left), slide (right),
+   settings drawer, notes, router, palette, presenter tools, keys
    ===================================================================== */
-MODS.sort((a, b) => a.slide - b.slide || a.n - b.n);
-const TYPE_LABEL = { chart: 'Chart', sim: 'Simulator', game: 'Game / poll', map: 'Map', tool: 'Tool', calc: 'Calculator' };
+/* presentation order: follows the deck, kit tools last */
+const ORDER = [29, 30, 19, 31, 32, 33, 34, 35, 36, 37, 2, 38, 39, 40, 43, 1, 3, 4, 41, 42, 8, 6, 7, 44, 45, 46, 47, 48, 49, 9,
+  10, 50, 51, 52, 53, 11, 55, 56, 54, 57, 12, 58, 59, 60, 61, 13, 14, 63, 64, 65, 62, 15, 16, 66, 67, 68, 69, 70, 5,
+  17, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 18, 81, 83, 82, 84, 85, 20, 87, 21, 22, 23, 24, 25, 26, 27, 28];
+MODS.sort((a, b) => { const x = ORDER.indexOf(a.n), y = ORDER.indexOf(b.n); return (x < 0 ? 999 : x) - (y < 0 ? 999 : y) || a.n - b.n; });
+MODS.forEach((m, i) => { m.pos = i + 1; });
+const TYPE_LABEL = { chart: 'Chart', sim: 'Simulator', game: 'Poll / game', map: 'Map', tool: 'Tool', calc: 'Calculator' };
 const WHO = ['All', 'Ben', 'Richard', 'Tomas'];
 let who = store.get('who', 'All'); if (!WHO.includes(who)) who = 'All';
-const main = $('#main');
+const viewEl = $('#view'), sideEl = $('#side'), topEl = $('#top');
 let current = null; // {mod, ctx}
-let filt = { slide: 'all', type: 'all', q: '' };
 
 /* ---------- theme ---------- */
-(function initTheme() {
-  const t = store.get('theme', null) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  document.documentElement.dataset.theme = t;
-})();
-function toggleTheme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; store.set('theme', t); if (themeBtn) themeBtn.textContent = t === 'dark' ? '☀ Light' : '☾ Dark'; }
+document.documentElement.dataset.theme = store.get('theme', null) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+function toggleTheme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; store.set('theme', t); }
+const svgI = d => `<svg viewBox="0 0 16 16" aria-hidden="true">${d}</svg>`;
+const ICON = { search: svgI('<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>'), sliders: svgI('<path d="M2 5h12M2 11h12"/><circle cx="10" cy="5" r="1.7" fill="var(--bg)"/><circle cx="6" cy="11" r="1.7" fill="var(--bg)"/>'), present: svgI('<rect x="2" y="2.5" width="12" height="8" rx="1.5"/><path d="M8 10.5V14M5.5 14h5"/>'), theme: svgI('<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor"/>'), menu: svgI('<path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>') };
 
-/* ---------- header + global switches ---------- */
-const topEl = $('#top');
-let themeBtn, presBtn, whoSel, swLine, swMode, swChina, rY0, rY1;
+/* ---------- top bar + settings drawer ---------- */
+let themeBtn, presBtn, setBtn, setPanel, swLine, swMode, swChina, rY0, rY1, whoSel;
 function buildHeader() {
-  const searchPill = h('div', { class: 'search', role: 'button', tabindex: 0, onclick: () => openPalette(), onkeydown: e => { if (e.key === 'Enter') openPalette(); } }, '🔍 Find a tool…', h('kbd', null, '/'));
-  whoSel = sel(WHO.map(w => [w, w === 'All' ? 'View as: everyone' : 'View as: ' + w]), who, v => { who = v; store.set('who', who); if (!current) renderRoute(); });
-  presBtn = h('button', { class: 'pill', type: 'button', onclick: () => togglePresent(), title: 'Presenter mode (P)' }, '🎤 Present');
-  themeBtn = h('button', { class: 'pill', type: 'button', onclick: toggleTheme }, document.documentElement.dataset.theme === 'dark' ? '☀ Light' : '☾ Dark');
-  const row = h('div', { class: 'top-row' }, h('div', { class: 'brand', onclick: () => go(''), role: 'link', tabindex: 0, onkeydown: e => { if (e.key === 'Enter') go(''); } }, h('b', null, 'Econ 223 ', h('i', null, 'Kit')), h('span', null, 'Did globalization reduce poverty… or did China?')), searchPill, whoSel, presBtn, themeBtn);
+  const menu = h('button', { class: 'pill menu', type: 'button', onclick: () => document.body.classList.toggle('nav-open'), 'aria-label': 'Show slide list', html: ICON.menu });
+  const brand = h('div', { class: 'brand', onclick: () => go(''), role: 'link' }, 'Econ 223 ', h('i', null, 'Kit'));
+  const search = h('button', { class: 'pill', type: 'button', onclick: () => openPalette(), title: 'Search (/)', html: ICON.search + '<span class="lbl">Search</span><kbd>/</kbd>' });
+  setBtn = h('button', { class: 'pill', type: 'button', onclick: e => { e.stopPropagation(); setPanel.classList.toggle('open'); }, title: 'Poverty line, view, years' });
+  presBtn = h('button', { class: 'pill', type: 'button', onclick: () => togglePresent(), title: 'Presenter mode (P)', html: ICON.present + '<span class="lbl">Present</span>' });
+  themeBtn = h('button', { class: 'pill ghost', type: 'button', onclick: toggleTheme, title: 'Light / dark', 'aria-label': 'Toggle light or dark', html: ICON.theme });
+  topEl.append(menu, brand, search, setBtn, presBtn, themeBtn);
+
   swLine = seg([[3, '$3.00'], [4.2, '$4.20'], [8.3, '$8.30']], S.line, v => setS({ line: +v }));
-  swMode = seg([['count', 'Headcount'], ['rate', 'Rate']], S.mode, v => setS({ mode: v }));
-  swChina = h('button', { class: 'pill', type: 'button', onclick: () => setS({ china: !S.china }), title: 'Include China where a module shows it' });
-  rY0 = range('', { min: 1981, max: 2021, value: S.y0, fmt: v => String(v) }, v => setS({ y0: v }));
-  rY1 = range('', { min: 1982, max: 2022, value: S.y1, fmt: v => String(v) }, v => setS({ y1: v }));
-  const sw = h('div', { class: 'sw', id: 'sw' },
-    h('div', { class: 'g' }, h('span', { class: 'lab' }, 'Poverty line / day'), swLine), h('div', { class: 'g' }, h('span', { class: 'lab' }, 'View'), swMode), h('div', { class: 'g' }, h('span', { class: 'lab' }, 'China'), swChina),
-    h('div', { class: 'g' }, h('span', { class: 'lab' }, 'Years'), rY0, h('span', null, '–'), rY1), h('button', { class: 'pill', type: 'button', onclick: () => setS({ line: 3, mode: 'count', china: true, y0: 1990, y1: 2022 }), title: 'Back to the deck defaults' }, '↺ Deck defaults'));
-  topEl.append(row, sw);
+  swMode = seg([['count', 'People'], ['rate', 'Share']], S.mode, v => setS({ mode: v }));
+  swChina = h('button', { class: 'pill', type: 'button', onclick: () => setS({ china: !S.china }) });
+  rY0 = range('From', { min: 1981, max: 2021, value: S.y0, fmt: v => String(v) }, v => setS({ y0: v }));
+  rY1 = range('To', { min: 1982, max: 2022, value: S.y1, fmt: v => String(v) }, v => setS({ y1: v }));
+  whoSel = sel(WHO.map(w => [w, w === 'All' ? 'Everyone' : w]), who, v => { who = v; store.set('who', who); buildSide(); });
+  const grp = (l, el) => h('div', null, h('span', { class: 'lab' }, l), el);
+  setPanel = h('div', { class: 'setp', id: 'sw', onclick: e => e.stopPropagation() },
+    grp('Poverty line per day (2021 PPP)', swLine), grp('Count', swMode), grp('Include China (where a chart can)', swChina),
+    grp('Years', h('div', { class: 'yrs' }, rY0, rY1)),
+    grp('Show only slides pinned for', whoSel),
+    h('button', { class: 'btn ghost', type: 'button', onclick: () => setS({ line: 3, mode: 'count', china: true, y0: 1990, y1: 2022 }) }, '↺ Back to the deck\'s defaults'));
+  topEl.append(setPanel);
+  document.addEventListener('click', e => { if (!setPanel.contains(e.target) && !setBtn.contains(e.target)) setPanel.classList.remove('open'); });
 }
+function openSettings() { setPanel.classList.add('open'); setPanel.classList.remove('flash'); void setPanel.offsetWidth; setPanel.classList.add('flash'); }
 function renderSwitches() {
   if (!swLine) return;
-  swLine.set(S.line); swMode.set(S.mode); swChina.textContent = S.china ? 'On' : 'Off'; swChina.classList.toggle('on', S.china);
+  swLine.set(S.line); swMode.set(S.mode); swChina.textContent = S.china ? 'China: on' : 'China: off'; swChina.classList.toggle('on', S.china);
   rY0.set(S.y0); rY1.set(S.y1);
-  $$('.devil-box').forEach(d => { d.style.display = S.devil ? '' : 'none'; });
+  setBtn.innerHTML = ICON.sliders + `<span class="sum">${lineName(S.line)} · ${S.mode === 'count' ? 'people' : 'share'} · ${S.y0}–${S.y1}${S.china ? '' : ' · no China'}</span>`;
+  const d = $('.devil'); if (d) d.style.display = S.devil ? '' : 'none';
+  const n = $('.notes'); if (n && S.devil) n.open = true;
+}
+
+/* ---------- left rail: one thumbnail per interactive ---------- */
+function pinsFor(w) { const P = store.get('pins', { Ben: [], Richard: [], Tomas: [] }); return new Set(P[w] || []); }
+function buildSide() {
+  sideEl.innerHTML = '';
+  const pins = who === 'All' ? null : pinsFor(who);
+  const groups = [];
+  MODS.forEach(m => { if (pins && !pins.has(m.n)) return; let g = groups.find(x => x.slide === m.slide); if (!g) { g = { slide: m.slide, mods: [] }; groups.push(g); } g.mods.push(m); });
+  groups.forEach(g => {
+    const kit = g.slide === 0;
+    sideEl.append(h('div', { class: 'blk' + (kit ? ' kit' : ''), 'data-slide': g.slide },
+      h('div', { class: 'bh' }, kit ? null : h('span', { class: 'sn' }, g.slide), h('span', { class: 't', style: kit ? { color: 'var(--ink)', fontSize: '.8rem' } : null }, kit ? 'Kit tools' : SLIDES[g.slide]), h('span', { class: 'c' }, g.mods.length)),
+      h('div', { class: 'mini' }, g.mods.map(m => h('a', { class: 'mt', href: '#m' + m.n, 'data-n': m.n, title: `${m.title}: ${m.one}`, onclick: () => document.body.classList.remove('nav-open') }, h('span', { class: 'n' }, m.pos), h('span', { class: 'tt' }, m.title))))));
+  });
+  if (!groups.length) sideEl.append(h('p', { style: { color: 'var(--mute)', padding: '1rem .4rem', fontSize: '.85rem' } }, `Nothing pinned for ${who}. Pin slides in the "Hand-off mode" tool, or choose Everyone in settings.`));
+  markActive();
+}
+function markActive() {
+  $$('.mt', sideEl).forEach(a => a.classList.toggle('on', !!current && +a.dataset.n === current.mod.n));
+  $$('.blk', sideEl).forEach(b => b.classList.toggle('cur', !!current && +b.dataset.slide === current.mod.slide));
+  const on = $('.mt.on', sideEl); if (on) on.scrollIntoView({ block: 'nearest' });
 }
 
 /* ---------- routing ---------- */
 function go(hash) {
-  if (!hash) { if (location.hash) history.pushState(null, '', location.pathname + location.search); renderRoute(); return; }
+  if (!hash) hash = 'm' + MODS[0].n;
   if (location.hash === '#' + hash) { renderRoute(); return; }
-  location.hash = hash; // triggers hashchange -> renderRoute
+  location.hash = hash;
 }
 window.addEventListener('hashchange', renderRoute);
 function renderRoute() {
   closePop();
-  const hs = location.hash.replace('#', '');
+  const m = /^m(\d+)$/.exec(location.hash.replace('#', ''));
+  const mod = m && modById(+m[1]) ? modById(+m[1]) : MODS[0];
   if (current) { unmountCtx(current.ctx); current = null; }
-  const m = /^m(\d+)$/.exec(hs);
-  if (m && modById(+m[1])) renderModule(modById(+m[1]));
-  else { const sm = /^s(\d+)$/.exec(hs); if (sm) filt.slide = sm[1]; renderGallery(); }
-  document.title = current ? `Econ 223 Kit · ${current.mod.title}` : 'Econ 223 Kit';
-  scrollTo(0, 0);
+  renderModule(mod);
+  document.title = `Econ 223 Kit · ${mod.title}`;
+  document.body.classList.remove('nav-open');
 }
 
-/* ---------- gallery ---------- */
-function pinsFor(w) { const P = store.get('pins', { Ben: [], Richard: [], Tomas: [] }); return new Set(P[w] || []); }
-function card(m) {
-  const pinned = who !== 'All' && pinsFor(who).has(m.n);
-  const star = h('button', { class: 'star' + (pinned ? ' on' : ''), type: 'button', title: who === 'All' ? 'Pin for a teammate' : (pinned ? 'Unpin from ' : 'Pin for ') + who, onclick: ev => { ev.stopPropagation(); pinMenu(star, m); } }, pinned ? '★' : '☆');
-  const c = h('div', { class: 'card', tabindex: 0, role: 'link', onclick: () => go('m' + m.n), onkeydown: e => { if (e.key === 'Enter') go('m' + m.n); } }, star,
-    h('div', { class: 'nm' }, h('span', { class: 'no' }, '#' + m.n), h('span', null, m.slide === 0 ? 'Kit tool' : 'Slide ' + m.slide)), h('h3', null, m.title), h('p', null, m.one),
-    h('div', { class: 'tags' }, h('span', { class: 'tag t-' + m.type }, TYPE_LABEL[m.type] || m.type), h('span', { class: 'tag' }, m.when)));
-  return c;
-}
-function pinMenu(anchor, m) {
-  const P = store.get('pins', { Ben: [], Richard: [], Tomas: [] });
-  showPop(anchor, '<b>Pin this tool for…</b><div id="pinbox"></div>');
-  const box = $('#pinbox', popEl);
-  ['Ben', 'Richard', 'Tomas'].forEach(nm => { const on = (P[nm] || []).includes(m.n); box.append(h('div', null, chk(nm, on, v => { P[nm] = (P[nm] || []).filter(x => x !== m.n); if (v) P[nm].push(m.n); store.set('pins', P); renderGallery(); }))); });
-}
-function renderGallery() {
-  main.innerHTML = '';
-  const t = shareOfFall(3, 1990, 2022);
-  main.append(h('div', { class: 'hero' }, h('div', { class: 'eyebrow' }, 'ECON 223 · Final presentation companion'), h('h1', null, 'Did globalization reduce global poverty ', h('em', null, '(or did China)?')),
-    h('p', null, `${MODS.length} interactive tools for your slides: charts built on real World Bank data, simulators for the course theory, polls and games for the room. Pick a card, or press `, h('b', null, '/'), ' to search. The bar above controls every chart at once.')));
-  main.append(h('div', { class: 'warn' }, h('b', null, 'Heads-up: '), `current World Bank data gives China ${fP(t.share * 100, 0)} of the 1990–2022 fall at $3 a day; slide 5 says ≈62% (read from a chart). `, h('a', { href: '#m84' }, 'See the full deck-vs-data check →')));
-  // filters
-  const slides = [['all', 'All']].concat([...new Set(MODS.map(m => m.slide))].sort((a, b) => a - b).map(s => [String(s), s === 0 ? 'Kit' : 'Slide ' + s]));
-  const f1 = h('div', { class: 'filters' }, h('span', { class: 'lab', style: { marginLeft: 0 } }, 'Slide'), slides.map(([v, l]) => h('button', { class: 'pill' + (filt.slide === v ? ' on' : ''), type: 'button', title: v === 'all' ? '' : SLIDES[+v], onclick: () => { filt.slide = v; renderGallery(); } }, l)));
-  const types = [['all', 'All types']].concat(Object.entries(TYPE_LABEL));
-  const inp = h('input', { type: 'text', placeholder: 'Filter these cards…', value: filt.q, style: { minWidth: '180px' } });
-  const f2 = h('div', { class: 'filters' }, h('span', { class: 'lab', style: { marginLeft: 0 } }, 'Type'), types.map(([v, l]) => h('button', { class: 'pill' + (filt.type === v ? ' on' : ''), type: 'button', onclick: () => { filt.type = v; renderGallery(); } }, l)), h('span', { class: 'lab' }, 'Filter'), inp);
-  main.append(f1, f2);
-  const grid = h('div', { class: 'grid' }); main.append(grid);
-  const pins = who === 'All' ? null : pinsFor(who);
-  function fill() {
-    grid.innerHTML = '';
-    const q = filt.q.toLowerCase();
-    const list = MODS.filter(m => (filt.slide === 'all' || String(m.slide) === filt.slide) && (filt.type === 'all' || m.type === filt.type) && (!pins || pins.has(m.n)) && (!q || [m.n, m.title, m.one, m.kw, m.when].join(' ').toLowerCase().includes(q)));
-    if (!list.length) { grid.append(h('div', { class: 'empty' }, pins ? `Nothing pinned for ${who} yet. Use the ☆ on a card, or the Hand-off table in tool #28.` : 'No tools match those filters.')); return; }
-    let last = null;
-    list.forEach(m => { if (m.slide !== last && filt.slide === 'all') { last = m.slide; grid.append(h('div', { class: 'sec-h' }, h('h2', null, m.slide === 0 ? 'Kit-wide tools' : `Slide ${m.slide} · ${SLIDES[m.slide]}`), h('span', null, list.filter(x => x.slide === m.slide).length + ' tools'))); } grid.append(card(m)); });
-    glossify(grid);
-  }
-  inp.addEventListener('input', () => { filt.q = inp.value; fill(); });
-  fill();
-  main.append(h('p', { style: { color: 'var(--mute)', fontSize: '.82rem', marginTop: '2rem' } }, 'Data: World Bank Poverty and Inequality Platform and World Development Indicators (pulled 13 Nov 2026, 2021 PPP); Natural Earth map outlines. Slide figures come from the team\'s deck. Source and caveat details are on every tool (click ⓘ).'));
-}
-
-/* ---------- module view ---------- */
+/* ---------- the slide ---------- */
 function renderModule(m) {
-  main.innerHTML = '';
-  const idx = MODS.indexOf(m), prev = MODS[idx - 1], next = MODS[idx + 1];
-  const back = btn('← All tools', () => go(''), 'ghost');
-  const link = btn('Copy link', () => { copyText(location.href); link.textContent = 'Copied ✓'; setTimeout(() => { link.textContent = 'Copy link'; }, 1400); }, 'ghost');
-  const head = h('div', { class: 'mv-head' }, h('div', { class: 'mv-bar' }, back, h('span', { class: 'sp' }), link), h('div', { class: 'when' }, `#${m.n} · ${m.slide === 0 ? 'Kit tool' : 'Slide ' + m.slide + ' · ' + SLIDES[m.slide]} · ${m.when}`), h('h2', null, m.title), h('p', { class: 'one' }, m.one));
+  viewEl.innerHTML = '';
+  const copy = h('button', { type: 'button' }, 'Copy link');
+  copy.addEventListener('click', () => { copyText(location.href); copy.textContent = 'Copied ✓'; setTimeout(() => { copy.textContent = 'Copy link'; }, 1400); });
   const stage = h('div', { class: 'stage' });
-  const foot = h('div', { class: 'mv-foot' });
-  main.append(head, stage, foot);
+  const slide = h('section', { class: 'slide' },
+    h('div', { class: 'eyebrow' }, h('span', { class: 'k' }, m.slide === 0 ? 'Kit tool' : `Slide ${m.slide}`), h('span', null, (m.slide === 0 ? '' : SLIDES[m.slide] + ' · ') + m.when), h('span', { class: 'sp' }), copy),
+    h('h2', null, m.title), h('p', { class: 'one' }, m.one), stage);
+  const notes = h('details', { class: 'notes' }, h('summary', null, 'Sources and limits'),
+    h('div', { class: 'in' },
+      h('div', { class: 'srcrow' }, h('b', null, 'Sources:'), (m.src || []).map(k => chip(k))),
+      h('div', { class: 'claim' }, h('div', { class: 'y' }, h('h4', { style: { color: 'var(--green)' } }, 'What this shows'), m.shows), h('div', { class: 'n' }, h('h4', { style: { color: 'var(--red)' } }, 'What it doesn\'t show'), m.limits)),
+      h('div', { class: 'devil', style: { display: S.devil ? '' : 'none' } }, h('h4', null, 'Devil\'s advocate'), m.devil || 'Association is not causation: ask what else changed at the same time.')));
+  if (S.devil) notes.open = true;
+  viewEl.append(slide, notes);
   const ctx = mountMod(m, stage);
   current = { mod: m, ctx };
-  // footer: sources, claim checker, devil's advocate, nav
-  foot.append(h('div', { class: 'srcrow' }, h('b', null, 'Sources:'), (m.src || []).map(k => chip(k))));
-  const cc = h('div', { class: 'claim' }, h('div', { class: 'y' }, h('h4', { style: { color: 'var(--green)' } }, 'What this shows'), m.shows), h('div', { class: 'n' }, h('h4', { style: { color: 'var(--red)' } }, 'What it doesn\'t show'), m.limits));
-  foot.append(cc, h('div', { class: 'devil devil-box', style: { display: S.devil ? '' : 'none' } }, h('h4', null, 'Devil\'s advocate'), m.devil || 'Association is not causation: ask what else changed at the same time.'));
-  foot.append(h('div', { class: 'nav2' }, prev ? btn('← #' + prev.n + ' ' + prev.title, () => go('m' + prev.n), 'ghost') : h('span'), next ? btn('#' + next.n + ' ' + next.title + ' →', () => go('m' + next.n), 'ghost') : h('span')));
-  glossify(head); glossify(stage); glossify(cc);
+  glossify(slide); glossify(notes);
   stage.addEventListener('click', e => { if (e.target.closest('button,select,input')) setTimeout(() => glossify(stage), 0); });
+  viewEl.scrollTop = 0;
+  markActive();
 }
+function step(d) { if (!current) return; const list = MODS.filter(m => who === 'All' || pinsFor(who).has(m.n)), i = list.indexOf(current.mod), n = list[i + d]; if (n) go('m' + n.n); }
 
-/* ---------- palette ---------- */
+/* ---------- search palette ---------- */
 let palEl = null;
 function openPalette() {
   if (palEl) return;
-  const inp = h('input', { type: 'text', placeholder: 'Type to find a tool: wto, gini, ricardo, poll, map…', 'aria-label': 'Find a tool' });
+  const inp = h('input', { type: 'text', placeholder: 'Find a slide: wto, gini, ricardo, poll, map…', 'aria-label': 'Search' });
   const ul = h('ul'); let selIdx = 0, items = [];
   palEl = h('div', { class: 'pal-bg', onclick: e => { if (e.target === palEl) closePalette(); } }, h('div', { class: 'pal', role: 'dialog' }, inp, ul));
   document.body.append(palEl); inp.focus();
-  function score(m, q) { if (!q) return 1; const hay = [m.n, m.title, m.one, m.kw || '', SLIDES[m.slide], 'slide ' + m.slide, m.type, m.when].join(' ').toLowerCase(); let s = 0; for (const t of q.toLowerCase().split(/\s+/).filter(Boolean)) { if (m.title.toLowerCase().includes(t)) s += 4; else if (hay.includes(t)) s += 1; else return 0; if (String(m.n) === t.replace('#', '')) s += 10; } return s; }
-  function paint() { const q = inp.value.trim(); items = MODS.map(m => [m, score(m, q)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 12).map(x => x[0]); selIdx = Math.min(selIdx, Math.max(0, items.length - 1)); ul.innerHTML = ''; items.forEach((m, i) => ul.append(h('li', { class: i === selIdx ? 'sel' : '', onclick: () => { closePalette(); go('m' + m.n); } }, h('span', { class: 'no' }, '#' + m.n), h('b', null, m.title), h('small', null, m.slide === 0 ? 'Kit' : 'Slide ' + m.slide)))); if (!items.length) ul.append(h('li', null, 'No match')); }
+  function score(m, q) { if (!q) return 1; const hay = [m.title, m.one, m.kw || '', SLIDES[m.slide], 'slide ' + m.slide, m.type, m.when].join(' ').toLowerCase(); let s = 0; for (const t of q.toLowerCase().split(/\s+/).filter(Boolean)) { if (m.title.toLowerCase().includes(t)) s += 4; else if (hay.includes(t)) s += 1; else return 0; } return s; }
+  function paint() { const q = inp.value.trim(); items = MODS.map(m => [m, score(m, q)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1] || a[0].pos - b[0].pos).slice(0, 12).map(x => x[0]); selIdx = Math.min(selIdx, Math.max(0, items.length - 1)); ul.innerHTML = ''; items.forEach((m, i) => ul.append(h('li', { class: i === selIdx ? 'sel' : '', onclick: () => { closePalette(); go('m' + m.n); } }, h('span', { class: 'no' }, m.pos), h('b', null, m.title), h('small', null, m.slide === 0 ? 'Kit' : 'Slide ' + m.slide)))); if (!items.length) ul.append(h('li', null, 'No match')); }
   inp.addEventListener('input', () => { selIdx = 0; paint(); });
   inp.addEventListener('keydown', e => { if (e.key === 'ArrowDown') { selIdx = Math.min(items.length - 1, selIdx + 1); paint(); e.preventDefault(); } else if (e.key === 'ArrowUp') { selIdx = Math.max(0, selIdx - 1); paint(); e.preventDefault(); } else if (e.key === 'Enter' && items[selIdx]) { const m = items[selIdx]; closePalette(); go('m' + m.n); } else if (e.key === 'Escape') { e.stopPropagation(); closePalette(); } });
   paint();
@@ -3081,8 +3126,7 @@ function buildHud() {
   const bL = h('button', { type: 'button', onclick: () => { PRES.laser = !PRES.laser; bL.classList.toggle('on', PRES.laser); laser.style.display = PRES.laser ? 'block' : 'none'; } }, 'Laser');
   const bP = h('button', { type: 'button', onclick: () => { PRES.pen = !PRES.pen; bP.classList.toggle('on', PRES.pen); ink.style.display = PRES.pen ? 'block' : 'none'; sizeInk(); } }, 'Pen');
   const bC = h('button', { type: 'button', onclick: () => ictx.clearRect(0, 0, ink.width, ink.height) }, 'Clear');
-  const bX = h('button', { type: 'button', onclick: () => togglePresent(false) }, 'Exit');
-  hud.append(time, bT, bR, bL, bP, bC, bX);
+  hud.append(h('button', { type: 'button', onclick: () => step(-1) }, '◀'), h('button', { type: 'button', onclick: () => step(1) }, '▶'), time, bT, bR, bL, bP, bC, h('button', { type: 'button', onclick: () => togglePresent(false) }, 'Exit'));
   addEventListener('pointermove', e => { if (PRES.laser) { laser.style.left = e.clientX + 'px'; laser.style.top = e.clientY + 'px'; } });
   let drawing = false, lx = 0, ly = 0;
   ink.addEventListener('pointerdown', e => { drawing = true; ink.setPointerCapture(e.pointerId); lx = e.clientX; ly = e.clientY; });
@@ -3100,18 +3144,18 @@ function togglePresent(force) {
 /* ---------- keyboard ---------- */
 addEventListener('keydown', e => {
   const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-  if (e.key === 'Escape') { if (palEl) closePalette(); else if (popEl) closePop(); else if (current) go(''); return; }
+  if (e.key === 'Escape') { if (palEl) closePalette(); else if (popEl) closePop(); else if (setPanel.classList.contains('open')) setPanel.classList.remove('open'); else if (document.body.classList.contains('present')) togglePresent(false); return; }
   if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === '/') { e.preventDefault(); openPalette(); }
   else if (e.key === 'p' || e.key === 'P') togglePresent();
   else if (e.key === 'd' || e.key === 'D') setS({ devil: !S.devil });
-  else if (e.key === 'h' || e.key === 'H') go('');
-  else if (current && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { const i = MODS.indexOf(current.mod), n = MODS[i + (e.key === 'ArrowRight' ? 1 : -1)]; if (n) go('m' + n.n); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
+  else if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); step(1); }
 });
 addEventListener('resize', () => { if (PRES.pen) sizeInk(); });
 
 /* ---------- start ---------- */
-buildHeader(); buildHud(); renderSwitches(); renderRoute();
+buildHeader(); buildHud(); buildSide(); renderSwitches(); renderRoute();
 </script>
 </body>
 </html>
