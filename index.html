@@ -957,18 +957,19 @@ M({
 });
 
 M({
-  n: 30, slide: 1, when: 'Open on slide 1', type: 'game', title: 'Live word cloud',
-  one: 'Type one word each for "what drove global poverty reduction?" and watch the room\'s answers cluster into a cloud.',
+  n: 30, slide: 1, when: 'Open on slide 1', type: 'game', title: 'Word cloud',
+  one: 'A word cloud of what people think drove global poverty reduction, pre-filled with example answers and open to adding more words on screen.',
   kw: 'words audience brainstorm', src: ['team'],
-  shows: 'The room\'s starting mental model, in its own words.', limits: 'Not a measurement of anything about poverty; it is a conversation starter. Stored only in this browser.',
-  devil: 'The most common word is the most familiar one, not the best supported one.',
+  shows: 'A starting mental model of what drove poverty reduction, in single words.', limits: 'The pre-filled words are examples written for the video, not survey responses, so do not present them as real audience data. Words you add are stored only in this browser.',
+  devil: 'The biggest word is the most familiar idea, not the best supported one.',
   mount(host) {
-    const W = store.get('words', {});
+    const EX = { trade: 6, china: 5, globalization: 4, reform: 4, markets: 3, policy: 3, growth: 3, manufacturing: 2, technology: 2, exports: 2, labour: 2, education: 1, aid: 1 };
+    const W = store.get('words', null) || { ...EX };
     const cloud = h('div', { class: 'cloud' });
     const inp = h('input', { type: 'text', placeholder: 'one word…', maxLength: 24 });
     const add = w => { w = (w || '').trim().toLowerCase(); if (!w) return; W[w] = (W[w] || 0) + 1; store.set('words', W); paint(); inp.value = ''; inp.focus(); };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') add(inp.value); });
-    const ctl = h('div', { class: 'ctl' }, inp, btn('Add', () => add(inp.value)), btn('Seed examples', () => ['trade', 'china', 'reform', 'markets', 'policy', 'growth', 'trade', 'china', 'aid', 'technology'].forEach(w => { W[w] = (W[w] || 0) + 1; store.set('words', W); paint(); }), 'ghost'), btn('Clear', () => { Object.keys(W).forEach(k => delete W[k]); store.set('words', W); paint(); }, 'ghost'));
+    const ctl = h('div', { class: 'ctl' }, inp, btn('Add', () => add(inp.value)), btn('Reset to examples', () => { Object.keys(W).forEach(k => delete W[k]); Object.assign(W, EX); store.set('words', W); paint(); }, 'ghost'));
     host.append(ctl, cloud);
     function paint() {
       cloud.innerHTML = '';
