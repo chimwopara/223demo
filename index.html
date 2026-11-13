@@ -3036,7 +3036,7 @@ const Studio = (() => {
   const bubble = h('div', { id: 'cam', class: 'circle', title: 'Drag to move · double-click to change size' }, h('video', { autoplay: true, playsinline: true }));
   const vid = bubble.firstChild; vid.muted = true;
   document.body.append(bubble);
-  let ask, panel, button, msg, camSel, micSel, meterBar, camSeg, micSeg, recBtn, sizeSeg, shapeSeg, hudCam, hudRec;
+  let fileIn, ask, panel, button, msg, camSel, micSel, meterBar, camSeg, micSeg, recBtn, sizeSeg, shapeSeg, hudCam, hudRec;
 
   /* ----- camera bubble ----- */
   function layout(initial) {
@@ -3098,12 +3098,27 @@ const Studio = (() => {
   /* ----- recording ----- */
   const chromium = !!window.chrome;
   function mimeCandidates(hasAudio) {
-    const webm = hasAudio ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'] : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    const webm = hasAudio ? ['video/webm;codecs=h264,opus', 'video/webm;codecs=avc1,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'] : ['video/webm;codecs=h264', 'video/webm;codecs=avc1', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
     const mp4 = hasAudio ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4'] : ['video/mp4;codecs=avc1.42E01E', 'video/mp4'];
     const ok = [...webm, ...mp4].filter(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
     return [...ok, ''];   // '' = let the browser choose
   }
-  function toast(t, ms = 6000) { const el = h('div', { class: 'toast' }, t); document.body.append(el); setTimeout(() => el.remove(), ms); }
+  function toast(t, ms = 6000, action) { const el = h('div', { class: 'toast' }, t); if (action) el.append(h('button', { class: 'btn red', type: 'button', style: { marginLeft: '.8rem' }, onclick: () => { el.remove(); action.fn(); } }, action.label)); document.body.append(el); setTimeout(() => el.remove(), ms); }
+  /* try each format for a moment and keep the first one that actually produces data */
+  async function findMime(stream, list) {
+    for (const mime of list) {
+      let r; try { r = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); } catch (e) { continue; }
+      const ok = await new Promise(res => {
+        let done = false, t; const fin = v => { if (!done) { done = true; clearTimeout(t); res(v); } };
+        r.ondataavailable = e => { if (e.data && e.data.size) fin(true); }; r.onerror = () => fin(false);
+        t = setTimeout(() => fin(false), 1500);
+        try { r.start(200); } catch (e) { fin(false); }
+      });
+      r.ondataavailable = null; r.onerror = null; try { if (r.state !== 'inactive') r.stop(); } catch (e) { /* already stopped */ }
+      if (ok) return mime;
+    }
+    return '';
+  }
   function countdown(n) {
     return new Promise(res => {
       const el = h('div', { class: 'countdown' }, String(n)); document.body.append(el);
@@ -3147,7 +3162,9 @@ const Studio = (() => {
       const n = store.get('recCount', 0) + 1; store.set('recCount', n);
       const name = `econ 223 kit ${n}.${ext}`;
       const a = h('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
-      toast(secs < 3 ? `Recording was only ${secs}s long (${st.reason}). Saved "${name}" anyway.` : `Saved "${name}" (${Math.floor(secs / 60)}m ${Math.round(secs % 60)}s). Check your Downloads folder.`, 8000);
+      st.last = ext === 'webm' ? { blob, base: `econ 223 kit ${n}` } : null; sync();
+      const act = ext === 'webm' ? { label: 'Convert to MP4', fn: () => convertToMp4(blob, `econ 223 kit ${n}`) } : null;
+      toast(secs < 3 ? `Recording was only ${secs}s long (${st.reason}). Saved "${name}" anyway.` : `Saved "${name}" (${Math.floor(secs / 60)}m ${Math.round(secs % 60)}s). Check your Downloads folder.`, act ? 20000 : 8000, act);
     };
     function begin(i) {
       const mime = list[i], more = i + 1 < list.length; let rec, got = 0;
@@ -3163,12 +3180,55 @@ const Studio = (() => {
     }
     disp.getVideoTracks()[0].addEventListener('ended', () => { if (st.recording || st.starting) { st.reason = 'screen sharing ended (the browser\'s Stop sharing button, or the tab was closed)'; if (st.recording) stopRec(); } });
     closePanel(); togglePresent(true); document.body.classList.add('recording');
-    await countdown(3);
+    const [chosen] = await Promise.all([findMime(stream, list), countdown(3)]);
+    st.format = chosen || 'default'; list.splice(0, list.length, ...[chosen, ...list.filter(x => x !== chosen)]);
     if (disp.getVideoTracks()[0].readyState !== 'live') { st.starting = false; document.body.classList.remove('recording'); togglePresent(false); disp.getTracks().forEach(t => t.stop()); toast('Screen sharing ended during the countdown. Please try again and choose "This tab".', 8000); return; }
     st.started = Date.now(); st.recording = true; st.starting = false; begin(0); sync();
   }
   function stopRec(reason) { st.userStop = true; if (reason) st.reason = reason; if (st.rec && st.rec.state !== 'inactive') st.rec.stop(); }
   const toggleRec = (src) => { if (st.recording) { if (src === 'key' && Date.now() - st.started < 2000) return; stopRec('you pressed stop'); } else startRec(); };
+
+  /* ----- WebM -> MP4 converter (ffmpeg compiled to WebAssembly; runs entirely in the browser) ----- */
+  const CDN = 'https://cdn.jsdelivr.net/npm/';
+  const loadScript = src => new Promise((res, rej) => { const el = h('script', { src }); el.onload = res; el.onerror = () => rej(new Error('Could not download ' + src.split('/').pop() + '. Check your internet connection.')); document.head.append(el); });
+  let ff = null, logBuf = [], progEl, convBtn, lastBtn, pickedFile = null;
+  const prog = (t, bad) => { if (progEl) { progEl.textContent = t; progEl.style.color = bad ? 'var(--red2)' : 'var(--mute)'; } };
+  async function loadFF() {
+    if (ff) return ff;
+    prog('Loading the converter (about 30 MB, only the first time)…');
+    if (!window.FFmpegWASM) await loadScript(CDN + '@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+    if (!window.FFmpegUtil) await loadScript(CDN + '@ffmpeg/util@0.12.1/dist/umd/index.js');
+    const { FFmpeg } = window.FFmpegWASM, { toBlobURL } = window.FFmpegUtil, core = CDN + '@ffmpeg/core@0.12.6/dist/esm/';
+    const f = new FFmpeg();
+    f.on('log', ({ message }) => { logBuf.push(message); if (logBuf.length > 300) logBuf.shift(); });
+    f.on('progress', ({ progress }) => { if (st.converting && progress >= 0 && progress <= 1) prog(`Converting… ${Math.round(progress * 100)}%`); });
+    await f.load({ classWorkerURL: await toBlobURL(CDN + '@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js', 'text/javascript'), coreURL: await toBlobURL(core + 'ffmpeg-core.js', 'text/javascript'), wasmURL: await toBlobURL(core + 'ffmpeg-core.wasm', 'application/wasm') });
+    ff = f; return f;
+  }
+  async function convertToMp4(blob, base) {
+    if (st.converting) return;
+    st.converting = true; if (convBtn) convBtn.disabled = true; if (lastBtn) lastBtn.disabled = true;
+    open();
+    try {
+      const f = await loadFF();
+      await f.writeFile('in.webm', new Uint8Array(await blob.arrayBuffer()));
+      logBuf = []; prog('Reading the video…');
+      await f.exec(['-i', 'in.webm']).catch(() => {});          // probe: ffmpeg "fails" without an output but logs the streams
+      const isH264 = /Video: h264/.test(logBuf.join('\n')); logBuf = [];
+      const args = isH264
+        ? ['-i', 'in.webm', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', 'out.mp4']
+        : ['-i', 'in.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '24', '-pix_fmt', 'yuv420p', '-vf', "scale='trunc(min(iw,1920)/2)*2':-2", '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', 'out.mp4'];
+      prog(isH264 ? 'Converting… (quick: this video is already H.264)' : 'Converting… (re-encoding: long videos can take several minutes)');
+      const t0 = Date.now(), code = await f.exec(args);
+      if (code !== 0) throw new Error('the converter exited with code ' + code + ' ' + logBuf.slice(-2).join(' '));
+      const data = await f.readFile('out.mp4');
+      f.deleteFile('in.webm').catch(() => {}); f.deleteFile('out.mp4').catch(() => {});
+      const out = new Blob([data], { type: 'video/mp4' }); st.lastMp4 = { size: out.size, h264copy: isH264, secs: (Date.now() - t0) / 1000 };
+      const a = h('a', { href: URL.createObjectURL(out), download: base + '.mp4' }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      prog(`Done. Saved "${base}.mp4" (${(out.size / 1048576).toFixed(1)} MB). Check your Downloads folder.`);
+    } catch (e) { prog('Conversion failed: ' + ((e && e.message) || e), true); }
+    finally { st.converting = false; if (convBtn) convBtn.disabled = false; if (lastBtn) lastBtn.disabled = !st.last; }
+  }
 
   /* ----- UI ----- */
   function sync() {
@@ -3177,6 +3237,7 @@ const Studio = (() => {
     if (hudCam) hudCam.classList.toggle('on', st.cam);
     if (hudRec) { hudRec.textContent = st.recording ? '■ Stop' : '● Rec'; hudRec.classList.toggle('on', st.recording); }
     if (button) button.classList.toggle('on', st.cam || st.recording);
+    if (lastBtn) lastBtn.disabled = !st.last || st.converting;
   }
   function open() { if (document.body.classList.contains('present') && !st.recording) togglePresent(false); panel.classList.add('open'); listDevices(); if (st.mic && !st.micStream) micOn(); }
   function closePanel() { panel && panel.classList.remove('open'); }
@@ -3190,7 +3251,11 @@ const Studio = (() => {
     camSel = h('select', { 'aria-label': 'Camera', onchange: e => { st.camId = e.target.value; if (st.cam) camOn(); } }, h('option', null, 'Default camera'));
     micSel = h('select', { 'aria-label': 'Microphone', onchange: e => { st.micId = e.target.value; if (st.mic && st.micStream) micOn(); } }, h('option', null, 'Default microphone'));
     meterBar = h('i'); const m = h('div', { class: 'meter' }, meterBar);
-    ask = h('div', { class: 'panel' }); 
+    ask = h('div', { class: 'panel' });
+    fileIn = h('input', { type: 'file', accept: '.webm,video/webm', 'aria-label': 'Choose a WebM file', onchange: e => { pickedFile = e.target.files[0] || null; } });
+    convBtn = btn('Convert the chosen file', () => { if (!pickedFile) { prog('Choose a .webm file first.', true); return; } convertToMp4(pickedFile, pickedFile.name.replace(/\.[^.]+$/, '')); }, 'ghost');
+    lastBtn = btn('Convert my last recording', () => { if (st.last) convertToMp4(st.last.blob, st.last.base); }, 'ghost'); lastBtn.disabled = true;
+    progEl = h('div', { style: { fontSize: '.8rem', color: 'var(--mute)', marginTop: '.4rem', minHeight: '1.1rem' } });
     recBtn = btn('Start recording', () => toggleRec(), 'red rec'); recBtn.style.width = '100%';
     const grp = (l, ...c) => h('div', null, h('span', { class: 'lab' }, l), ...c);
     panel = h('div', { class: 'setp', id: 'studio', onclick: e => e.stopPropagation() },
@@ -3199,6 +3264,7 @@ const Studio = (() => {
       grp('Microphone', h('div', { class: 'srow' }, micSeg), h('div', { style: { marginTop: '.4rem' } }, micSel), h('div', { style: { marginTop: '.5rem' } }, m)),
       h('div', { style: { fontSize: '.8rem', color: 'var(--mute)', lineHeight: 1.4 } }, 'Tip: record in light mode. A bright screen lights your face on camera.'),
       ask, recBtn, msg,
+      grp('Convert WebM to MP4', h('div', { style: { fontSize: '.76rem', color: 'var(--mute)', marginBottom: '.4rem' } }, 'For QuickTime and iMovie. Runs in your browser; nothing is uploaded.'), fileIn, h('div', { class: 'srow', style: { marginTop: '.5rem' } }, convBtn, lastBtn), progEl),
       h('div', { style: { fontSize: '.76rem', color: 'var(--mute)', lineHeight: 1.4 } }, 'Recording saves a video of this tab with your voice and the camera bubble, right in your browser, as "econ 223 kit 1", "econ 223 kit 2" and so on (.webm: opens in Chrome and VLC; convert to MP4 for QuickTime). Pick "This tab" when asked. Press ', h('kbd', null, 'R'), ' or the browser\'s Stop sharing button to finish. The file lands in Downloads.'));
     document.addEventListener('click', e => { if (panel && !panel.contains(e.target) && !button.contains(e.target)) closePanel(); });
     sync();
@@ -3210,7 +3276,7 @@ const Studio = (() => {
     return [hudCam, hudRec];
   }
   layout();
-  return { init, hudButtons, toggleRec: src => toggleRec(src), toggleCam: () => st.cam ? camOff() : camOn(), close: closePanel, state: st, camOn, micOn, startRec, stopRec };
+  return { convertToMp4, init, hudButtons, toggleRec: src => toggleRec(src), toggleCam: () => st.cam ? camOff() : camOn(), close: closePanel, state: st, camOn, micOn, startRec, stopRec };
 })();
 
 /* =====================================================================
