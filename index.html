@@ -3031,12 +3031,12 @@ M({
    (all in the browser: nothing is uploaded anywhere)
    ===================================================================== */
 const Studio = (() => {
-  const st = { cam: false, mic: true, camStream: null, micStream: null, size: store.get('camSize', 'M'), shape: store.get('camShape', 'circle'), recording: false, rec: null, chunks: [], camId: '', micId: '', raf: 0, ac: null, started: 0 };
+  const st = { cam: false, mic: true, camStream: null, micStream: null, size: store.get('camSize', 'M'), shape: store.get('camShape', 'circle'), recording: false, rec: null, chunks: [], camId: '', micId: '', raf: 0, ac: null, started: 0, starting: false, reason: '', fmt: store.get('recFmt', 'webm') };
   const SIZES = { S: 150, M: 210, L: 300 };
   const bubble = h('div', { id: 'cam', class: 'circle', title: 'Drag to move · double-click to change size' }, h('video', { autoplay: true, playsinline: true }));
   const vid = bubble.firstChild; vid.muted = true;
   document.body.append(bubble);
-  let panel, button, msg, camSel, micSel, meterBar, camSeg, micSeg, recBtn, sizeSeg, shapeSeg, hudCam, hudRec;
+  let ask, panel, button, msg, camSel, micSel, meterBar, camSeg, micSeg, recBtn, sizeSeg, shapeSeg, hudCam, hudRec;
 
   /* ----- camera bubble ----- */
   function layout(initial) {
@@ -3096,45 +3096,79 @@ const Studio = (() => {
   }
 
   /* ----- recording ----- */
-  const pickMime = () => ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
-  function toast(t, ms = 5000) { const el = h('div', { class: 'toast' }, t); document.body.append(el); setTimeout(() => el.remove(), ms); }
+  const chromium = !!window.chrome;
+  function mimeCandidates(hasAudio) {
+    const webm = hasAudio ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'] : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    const mp4 = hasAudio ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4'] : ['video/mp4;codecs=avc1.42E01E', 'video/mp4'];
+    const ok = [...webm, ...mp4].filter(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+    return [...ok, ''];   // '' = let the browser choose
+  }
+  function toast(t, ms = 6000) { const el = h('div', { class: 'toast' }, t); document.body.append(el); setTimeout(() => el.remove(), ms); }
   function countdown(n) {
     return new Promise(res => {
       const el = h('div', { class: 'countdown' }, String(n)); document.body.append(el);
       let k = n; const t = setInterval(() => { k--; if (k <= 0) { clearInterval(t); el.remove(); res(); } else el.textContent = String(k); }, 1000);
     });
   }
-  async function startRec() {
-    if (st.recording) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || !window.MediaRecorder) { say('Screen recording is not supported in this browser. Use desktop Chrome, Edge or Safari.', true); open(); return; }
+  const isDark = () => document.documentElement.dataset.theme === 'dark';
+  /* a bright screen lights the presenter's face: suggest light mode before recording */
+  function askLight() {
+    ask.innerHTML = '';
+    ask.append(h('div', { style: { fontSize: '.86rem', lineHeight: 1.4 } }, 'You\'re in dark mode. A bright screen lights your face on camera, so light mode looks better in the video.'),
+      h('div', { class: 'srow', style: { marginTop: '.5rem' } }, btn('Switch to light and record', () => { setTheme('light'); ask.innerHTML = ''; startRec(true); }, 'red'), btn('Record anyway', () => { ask.innerHTML = ''; startRec(true); }, 'ghost')));
+    open();
+  }
+  async function startRec(skipAsk) {
+    if (st.recording || st.starting) return;
+    if (!skipAsk && isDark()) { askLight(); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || !window.MediaRecorder) { say('Screen recording is not supported in this browser. Use desktop Chrome or Edge.', true); open(); return; }
+    st.starting = true;
     let disp;
     try {
       say('Choose "This tab" in the browser prompt…');
-      disp = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false, preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude' });
-    } catch (e) { say(e && e.name === 'NotAllowedError' ? 'Recording was cancelled.' : errText(e), true); return; }
-    if (st.mic && !st.micStream) await micOn();
-    const tracks = [...disp.getVideoTracks(), ...(st.micStream && st.mic ? st.micStream.getAudioTracks() : [])];
-    const stream = new MediaStream(tracks), mime = pickMime();
-    let rec; try { rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6e6 } : undefined); } catch (e) { disp.getTracks().forEach(t => t.stop()); say(errText(e), true); return; }
-    st.rec = rec; st.chunks = [];
-    rec.ondataavailable = e => { if (e.data && e.data.size) st.chunks.push(e.data); };
-    rec.onstop = () => {
+      const opts = { video: { frameRate: 30 }, audio: false };
+      if (chromium) { opts.preferCurrentTab = true; opts.selfBrowserSurface = 'include'; }
+      disp = await navigator.mediaDevices.getDisplayMedia(opts);
+    } catch (e) { st.starting = false; say(e && e.name === 'NotAllowedError' ? 'Recording was cancelled or blocked.' : errText(e), true); open(); return; }
+    // make sure the mic is live (it may have been interrupted)
+    if (st.mic && (!st.micStream || st.micStream.getAudioTracks().some(t => t.readyState !== 'live'))) await micOn();
+    const audioTracks = st.mic && st.micStream ? st.micStream.getAudioTracks().filter(t => t.readyState === 'live') : [];
+    const stream = new MediaStream([...disp.getVideoTracks(), ...audioTracks]);
+    const list = mimeCandidates(audioTracks.length > 0);
+    st.reason = 'you pressed stop'; st.userStop = false;
+    const retire = r => { r._retired = true; r.ondataavailable = null; r.onerror = null; try { if (r.state !== 'inactive') r.stop(); } catch (x) { /* already stopped */ } };
+    const finalize = (rec, mime) => {
       disp.getTracks().forEach(t => t.stop());
       const type = (rec.mimeType || mime || 'video/webm').split(';')[0], ext = type.includes('mp4') ? 'mp4' : 'webm';
       const blob = new Blob(st.chunks, { type }); st.lastBlobSize = blob.size;
-      const d = new Date(), name = `econ223-presentation-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}.${ext}`;
+      const secs = Math.max(0, Math.round((Date.now() - st.started) / 100) / 10);
+      st.recording = false; st.starting = false; st.rec = null; clearTimeout(st.wd); document.body.classList.remove('recording'); togglePresent(false); sync();
+      if (blob.size < 2000) { toast(`Recording stopped after ${secs}s and nothing was saved (${st.reason}). Open Studio and try again.`, 9000); return; }
+      const n = store.get('recCount', 0) + 1; store.set('recCount', n);
+      const name = `econ 223 kit ${n}.${ext}`;
       const a = h('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
-      st.recording = false; st.rec = null; document.body.classList.remove('recording'); togglePresent(false); sync();
-      const secs = Math.round((Date.now() - st.started) / 1000);
-      toast(`Saved ${name} (${Math.floor(secs / 60)}m ${secs % 60}s). Check your Downloads folder.`);
+      toast(secs < 3 ? `Recording was only ${secs}s long (${st.reason}). Saved "${name}" anyway.` : `Saved "${name}" (${Math.floor(secs / 60)}m ${Math.round(secs % 60)}s). Check your Downloads folder.`, 8000);
     };
-    disp.getVideoTracks()[0].addEventListener('ended', () => { if (st.recording) stopRec(); });
+    function begin(i) {
+      const mime = list[i], more = i + 1 < list.length; let rec, got = 0;
+      try { rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6e6 } : undefined); }
+      catch (e) { if (more) return begin(i + 1); st.reason = 'could not start the recorder: ' + errText(e); return finalize({ mimeType: '' }, ''); }
+      st.rec = rec; st.chunks = [];
+      rec.ondataavailable = e => { if (e.data && e.data.size) { st.chunks.push(e.data); got += e.data.size; } };
+      rec.onerror = e => { st.reason = 'the recorder reported an error: ' + ((e.error && (e.error.message || e.error.name)) || 'unknown'); if (more && !got && !st.userStop) { retire(rec); begin(i + 1); } else { try { rec.stop(); } catch (x) { /* already stopped */ } } };
+      rec.onstop = () => { if (rec._retired) return; if (!got && !st.userStop && more) { retire(rec); begin(i + 1); return; } finalize(rec, mime); };
+      try { rec.start(1000); } catch (e) { retire(rec); if (more) return begin(i + 1); st.reason = 'could not start the recorder: ' + errText(e); return finalize({ mimeType: '' }, ''); }
+      clearTimeout(st.wd);
+      st.wd = setTimeout(() => { if (st.rec === rec && st.recording && !got && more) { retire(rec); begin(i + 1); } }, 2500);   // no data after 2.5s: try the next format
+    }
+    disp.getVideoTracks()[0].addEventListener('ended', () => { if (st.recording || st.starting) { st.reason = 'screen sharing ended (the browser\'s Stop sharing button, or the tab was closed)'; if (st.recording) stopRec(); } });
     closePanel(); togglePresent(true); document.body.classList.add('recording');
     await countdown(3);
-    st.started = Date.now(); st.recording = true; rec.start(1000); sync();
+    if (disp.getVideoTracks()[0].readyState !== 'live') { st.starting = false; document.body.classList.remove('recording'); togglePresent(false); disp.getTracks().forEach(t => t.stop()); toast('Screen sharing ended during the countdown. Please try again and choose "This tab".', 8000); return; }
+    st.started = Date.now(); st.recording = true; st.starting = false; begin(0); sync();
   }
-  function stopRec() { if (st.rec && st.rec.state !== 'inactive') st.rec.stop(); }
-  const toggleRec = () => st.recording ? stopRec() : startRec();
+  function stopRec(reason) { st.userStop = true; if (reason) st.reason = reason; if (st.rec && st.rec.state !== 'inactive') st.rec.stop(); }
+  const toggleRec = (src) => { if (st.recording) { if (src === 'key' && Date.now() - st.started < 2000) return; stopRec('you pressed stop'); } else startRec(); };
 
   /* ----- UI ----- */
   function sync() {
@@ -3144,7 +3178,7 @@ const Studio = (() => {
     if (hudRec) { hudRec.textContent = st.recording ? '■ Stop' : '● Rec'; hudRec.classList.toggle('on', st.recording); }
     if (button) button.classList.toggle('on', st.cam || st.recording);
   }
-  function open() { panel.classList.add('open'); listDevices(); if (st.mic && !st.micStream) micOn(); }
+  function open() { if (document.body.classList.contains('present') && !st.recording) togglePresent(false); panel.classList.add('open'); listDevices(); if (st.mic && !st.micStream) micOn(); }
   function closePanel() { panel && panel.classList.remove('open'); }
   function init(icon) {
     button = h('button', { class: 'pill', type: 'button', title: 'Camera, microphone and recording (R)', html: icon + '<span class="lbl">Studio</span>', onclick: e => { e.stopPropagation(); panel.classList.contains('open') ? closePanel() : (setPanel && setPanel.classList.remove('open'), open()); } });
@@ -3156,14 +3190,16 @@ const Studio = (() => {
     camSel = h('select', { 'aria-label': 'Camera', onchange: e => { st.camId = e.target.value; if (st.cam) camOn(); } }, h('option', null, 'Default camera'));
     micSel = h('select', { 'aria-label': 'Microphone', onchange: e => { st.micId = e.target.value; if (st.mic && st.micStream) micOn(); } }, h('option', null, 'Default microphone'));
     meterBar = h('i'); const m = h('div', { class: 'meter' }, meterBar);
+    ask = h('div', { class: 'panel' }); 
     recBtn = btn('Start recording', () => toggleRec(), 'red rec'); recBtn.style.width = '100%';
     const grp = (l, ...c) => h('div', null, h('span', { class: 'lab' }, l), ...c);
     panel = h('div', { class: 'setp', id: 'studio', onclick: e => e.stopPropagation() },
       grp('Camera', h('div', { class: 'srow' }, camSeg), h('div', { style: { marginTop: '.4rem' } }, camSel)),
       grp('Camera bubble', h('div', { class: 'srow' }, sizeSeg, shapeSeg), h('div', { style: { fontSize: '.76rem', color: 'var(--mute)', marginTop: '.3rem' } }, 'Drag it anywhere. Double-click to change size.')),
       grp('Microphone', h('div', { class: 'srow' }, micSeg), h('div', { style: { marginTop: '.4rem' } }, micSel), h('div', { style: { marginTop: '.5rem' } }, m)),
-      recBtn, msg,
-      h('div', { style: { fontSize: '.76rem', color: 'var(--mute)', lineHeight: 1.4 } }, 'Recording saves a video of this tab with your voice and the camera bubble, right in your browser. Pick "This tab" when asked. Press ', h('kbd', null, 'R'), ' or the browser\'s Stop sharing button to finish. The file lands in Downloads.'));
+      h('div', { style: { fontSize: '.8rem', color: 'var(--mute)', lineHeight: 1.4 } }, 'Tip: record in light mode. A bright screen lights your face on camera.'),
+      ask, recBtn, msg,
+      h('div', { style: { fontSize: '.76rem', color: 'var(--mute)', lineHeight: 1.4 } }, 'Recording saves a video of this tab with your voice and the camera bubble, right in your browser, as "econ 223 kit 1", "econ 223 kit 2" and so on (.webm: opens in Chrome and VLC; convert to MP4 for QuickTime). Pick "This tab" when asked. Press ', h('kbd', null, 'R'), ' or the browser\'s Stop sharing button to finish. The file lands in Downloads.'));
     document.addEventListener('click', e => { if (panel && !panel.contains(e.target) && !button.contains(e.target)) closePanel(); });
     sync();
     return { button, panel };
@@ -3174,7 +3210,7 @@ const Studio = (() => {
     return [hudCam, hudRec];
   }
   layout();
-  return { init, hudButtons, toggleRec, toggleCam: () => st.cam ? camOff() : camOn(), close: closePanel, state: st, camOn, micOn, startRec, stopRec };
+  return { init, hudButtons, toggleRec: src => toggleRec(src), toggleCam: () => st.cam ? camOff() : camOn(), close: closePanel, state: st, camOn, micOn, startRec, stopRec };
 })();
 
 /* =====================================================================
@@ -3195,7 +3231,8 @@ let current = null; // {mod, ctx}
 
 /* ---------- theme ---------- */
 document.documentElement.dataset.theme = store.get('theme', null) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-function toggleTheme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; store.set('theme', t); }
+function setTheme(t) { document.documentElement.dataset.theme = t; store.set('theme', t); }
+function toggleTheme() { setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
 const svgI = d => `<svg viewBox="0 0 16 16" aria-hidden="true">${d}</svg>`;
 const ICON = { search: svgI('<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>'), sliders: svgI('<path d="M2 5h12M2 11h12"/><circle cx="10" cy="5" r="1.7" fill="var(--bg)"/><circle cx="6" cy="11" r="1.7" fill="var(--bg)"/>'), present: svgI('<rect x="2" y="2.5" width="12" height="8" rx="1.5"/><path d="M8 10.5V14M5.5 14h5"/>'), theme: svgI('<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor"/>'), menu: svgI('<path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>'), cam: svgI('<rect x="1.5" y="4" width="9" height="8" rx="2"/><path d="M10.5 7l4-2v6l-4-2z"/>') };
 
@@ -3350,7 +3387,7 @@ addEventListener('keydown', e => {
   if (e.key === '/') { e.preventDefault(); openPalette(); }
   else if (e.key === 'p' || e.key === 'P') togglePresent();
   else if (e.key === 'd' || e.key === 'D') setS({ devil: !S.devil });
-  else if (e.key === 'r' || e.key === 'R') Studio.toggleRec();
+  else if ((e.key === 'r' || e.key === 'R') && !e.repeat) Studio.toggleRec('key');
   else if (e.key === 'c' || e.key === 'C') Studio.toggleCam();
   else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
   else if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); step(1); }
