@@ -187,6 +187,18 @@ body.present .side,body.present .top,body.present .notes{display:none}
 body.present .app{grid-template-columns:1fr;grid-template-rows:1fr}
 body.present .view{grid-row:1;padding:2.2rem 3.4rem}
 body.present .slide{max-width:1180px}
+/* ---------- studio: camera bubble + recording ---------- */
+#cam{position:fixed;z-index:28;display:none;overflow:hidden;background:#000;cursor:grab;touch-action:none;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 3px rgba(255,255,255,.9)}
+#cam.circle{border-radius:50%}
+#cam.round{border-radius:22px}
+#cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);pointer-events:none;display:block}
+.countdown{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;font-size:12rem;font-weight:700;letter-spacing:-.04em;color:#fff;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.toast{position:fixed;left:50%;top:1.2rem;transform:translateX(-50%);z-index:99;background:rgba(29,29,31,.92);color:#fff;padding:.7rem 1.1rem;border-radius:14px;font-size:.9rem;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:90vw}
+.meter{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--green);transition:width .06s}
+.btn.red.rec{background:#ff3b30}
+.srow{display:flex;gap:.5rem;flex-wrap:wrap}
+body.recording .hud{display:none!important}
 /* ---------- misc widgets used by modules ---------- */
 .cloud{display:flex;flex-wrap:wrap;gap:.2rem .9rem;align-items:center;justify-content:center;min-height:200px;padding:1rem}
 .cloud span{font-weight:700;letter-spacing:-.03em;line-height:1}
@@ -712,6 +724,7 @@ function drawPad(host, o) {
   svg.addEventListener('pointermove', ev => { if (down) rec(ev); });
   svg.addEventListener('pointerup', () => { down = false; });
   wrap.append(svg); host.append(wrap);
+  if (o.prefill) { o.prefill.forEach(([x, y]) => guess.set(x, y)); path(); }
   return {
     guess,
     clear() { guess.clear(); gUser.innerHTML = ''; gTruth.innerHTML = ''; o.onChange && o.onChange(guess); },
@@ -903,6 +916,10 @@ const SLIDES = {
    MODULES — slides 1 to 5
    ===================================================================== */
 
+/* example poll results so the tools are populated for a recorded video */
+const TUG0 = { votes: [], before: 41, after: 64 };
+const tugGet = () => store.get('tug', JSON.parse(JSON.stringify(TUG0)));
+
 /* ---------- shared: tug-of-war bar ---------- */
 function tugBar(parent, o) {
   const bar = h('div', { style: { position: 'relative', height: '92px', margin: '2.3rem 14px 2.6rem', borderRadius: '12px', border: '1px solid var(--line)', background: 'linear-gradient(90deg,var(--slate),var(--soft) 50%,var(--red))', touchAction: 'none', cursor: o.interactive ? 'ew-resize' : 'default', userSelect: 'none' } });
@@ -932,12 +949,12 @@ const avg = a => a.length ? sum(a) / a.length : null;
 
 M({
   n: 29, slide: 1, when: 'Open on slide 1; re-poll on slide 13', type: 'game', title: 'Tug-of-war bar',
-  one: 'A draggable bar between "globalization did it" and "China did it" that you poll the room with at the start and again at the end.',
+  one: 'A draggable bar between "globalization did it" and "China did it", pre-set with example BEFORE and AFTER positions that you can drag or re-poll on screen.',
   kw: 'poll vote audience before after opinion', src: ['team'],
-  shows: 'Where this room starts, and how far it moves once it has seen your evidence.', limits: 'A small, self-selected room; it measures persuasion, not truth. Votes are stored only in this browser.',
+  shows: 'Where this room starts, and how far it moves once it has seen your evidence.', limits: 'The BEFORE and AFTER positions are pre-filled examples for the video, not real votes. A poll measures persuasion, not truth. Changes are stored only in this browser.',
   devil: 'A room that moves toward your view may simply be responding to confident framing. Ask what evidence would have moved it the other way.',
   mount(host, ctx) {
-    const T = store.get('tug', { votes: [], before: null, after: null }); let pos = 50;
+    const T = tugGet(); let pos = 50;
     const { ctl, out } = std(host);
     const tb = tugBar(host, { interactive: true, onMove: p => { pos = p; paint(); } });
     host.insertBefore(tb.bar, out);
@@ -950,8 +967,8 @@ M({
       btn('Lock average as BEFORE', () => { if (T.votes.length) { T.before = avg(T.votes); T.votes = []; save(); paint(); } }, 'ghost'),
       btn('Lock average as AFTER', () => { if (T.votes.length) { T.after = avg(T.votes); T.votes = []; save(); paint(); } }, 'ghost'),
       btn('Add 15 demo votes', () => { const r = rng32(Date.now()); for (let i = 0; i < 15; i++) T.votes.push(Math.round(clamp(50 + gauss(r) * 18, 0, 100))); save(); paint(); }, 'ghost'),
-      btn('Reset', () => { T.votes = []; T.before = T.after = null; save(); paint(); }, 'ghost'));
-    host.append(note('Count hands, drag the bar to the room\'s position, press <b>Add vote</b> for each person (or add a few demo votes to rehearse). Lock the average as BEFORE now and AFTER at the end.', true));
+      btn('Reset to examples', () => { Object.assign(T, JSON.parse(JSON.stringify(TUG0))); save(); paint(); }, 'ghost'));
+    host.append(note('The bar opens with an example BEFORE (41) and AFTER (64). To re-run it live, drag the bar, press <b>Add vote</b> for each person, then lock the average as BEFORE or AFTER.', true));
     paint();
   }
 });
@@ -985,13 +1002,13 @@ M({
   n: 19, slide: 2, when: 'Poll after slide 2; reveal after slide 5', type: 'game', title: 'Guess China\'s share',
   one: 'Everyone guesses what share of the global fall in poverty was China, you collect the guesses, then reveal the real number after slide 5.',
   kw: 'guess poll reveal 62 percent histogram', src: ['pip', 'deck'],
-  shows: 'How far the room\'s intuition is from the calculated share for the chosen line and years.', limits: 'The "true" share depends on the poverty line and the years; the deck says 62%, current PIP data gives a higher number for $3 over 1990–2022.',
+  shows: 'How far the room\'s intuition is from the calculated share for the chosen line and years.', limits: 'The histogram is pre-filled with example guesses for the video, not real responses. The "true" share depends on the poverty line and the years; the deck says 62%, current PIP data gives a higher number for $3 over 1990–2022.',
   devil: 'The share is a statement about arithmetic (headcounts), not about cause: a large share could still be produced by many global forces landing in a big country.',
   mount(host, ctx) {
-    const G = store.get('guesses', []); let revealed = false;
+    const G0 = [35, 40, 45, 50, 50, 55, 60, 40, 30, 45, 65, 50], G = store.get('guesses', null) || G0.slice(); let revealed = false;
     const { ctl, viz, out } = std(host);
     const r = range('My guess: China\'s share of the global fall (%)', { min: 0, max: 100, value: 50, fmt: v => v + '%' });
-    ctl.append(r, btn('Add guess', () => { G.push(r.get()); store.set('guesses', G); draw(); }), btn('Reveal truth', () => { revealed = !revealed; draw(); }, 'red'), btn('Clear guesses', () => { G.length = 0; store.set('guesses', G); draw(); }, 'ghost'));
+    ctl.append(r, btn('Add guess', () => { G.push(r.get()); store.set('guesses', G); draw(); }), btn('Reveal truth', () => { revealed = !revealed; draw(); }, 'red'), btn('Reset to examples', () => { G.length = 0; G.push(...G0); store.set('guesses', G); draw(); }, 'ghost'));
     const bc = barChart(viz, { bars: [] });
     function draw() {
       const t = shareOfFall(S.line, S.y0, S.y1), truth = t.share * 100;
@@ -1466,7 +1483,7 @@ M({
   n: 8, slide: 6, when: 'Before slide 6', type: 'game', title: 'You draw it',
   one: 'Someone in the room draws what they think China\'s poverty rate did from 1990, then you reveal the real curve and score the guess.',
   kw: 'prediction guess draw reveal audience', src: ['pip'],
-  shows: 'How surprising the early collapse is, before WTO entry, to someone who has not seen the chart.', limits: 'One guess is an anecdote. PIP\'s yearly values are interpolated between survey years.',
+  shows: 'How surprising the early collapse is, before WTO entry, to someone who has not seen the chart.', limits: 'The pre-drawn curve is an example guess for the video; press Clear to draw your own. One guess is an anecdote, and PIP\'s yearly values are interpolated between survey years.',
   devil: 'If the room guesses the shape right, the surprise factor is gone; this is a rhetorical device, not evidence.',
   mount(host, ctx) {
     let horizon = 2001, pad = null;
@@ -1474,7 +1491,7 @@ M({
     ctl.append(lab('Draw from 1990 to'), sel([[2001, '2001 (WTO entry)'], [2022, '2022 (end)']], horizon, v => { horizon = +v; build_(); }), btn('Reveal', reveal, 'red'), btn('Clear', () => { pad.clear(); setStats(out, []); }, 'ghost'));
     function build_() {
       viz.innerHTML = ''; const r = chinaRate();
-      pad = drawPad(viz, { x0: 1990, x1: 2022, ymin: 0, ymax: 100, from: 1990, to: horizon, startVal: r[yi(1990)], yfmt: v => v + '%' });
+      pad = drawPad(viz, { x0: 1990, x1: 2022, ymin: 0, ymax: 100, from: 1990, to: horizon, startVal: r[yi(1990)], yfmt: v => v + '%', prefill: [[1992, 79], [1994, 76], [1996, 73], [1998, 71], [2000, 69], [2001, 68]].concat(horizon === 2022 ? [[2005, 60], [2010, 50], [2015, 38], [2022, 25]] : []) });
       setStats(out, []);
     }
     function reveal() {
@@ -1483,7 +1500,7 @@ M({
       setStats(out, [[n ? err / n < 1 ? '<1 pt' : (err / n).toFixed(1) + ' pts' : 'draw first', 'average miss (percentage points)', 's3'], [fP(r[yi(horizon)], 1), `actual rate in ${horizon}`], [fP(r[yi(1990)], 1), 'actual rate in 1990', 's2']]);
     }
     let lastLine = S.line; ctx.watch(() => { if (S.line !== lastLine) { lastLine = S.line; build_(); } }); build_();
-    host.append(note('Drag across the shaded area to draw. Press <b>Reveal</b> to overlay the real PIP curve (blue).', true));
+    host.append(note('A red example guess is already drawn. Press <b>Reveal</b> to overlay the real PIP curve (blue), or <b>Clear</b> and drag across the shaded area to draw your own.', true));
   }
 });
 
@@ -2638,12 +2655,12 @@ M({
   n: 80, slide: 12, when: 'After slide 12', type: 'game', title: 'Counterfactual drawer',
   one: 'Draw what you think China\'s poverty rate would have done without reform, then overlay the actual curve and the rest of the world.',
   kw: 'counterfactual draw without reform imagine prediction audience', src: ['pip'],
-  shows: 'That any "what if" is a drawing: the room can disagree about the counterfactual, which is the core difficulty of causal claims.', limits: 'The overlay shows what actually happened, not the true counterfactual, which is unobservable.',
+  shows: 'That any "what if" is a drawing: the room can disagree about the counterfactual, which is the core difficulty of causal claims.', limits: 'The pre-drawn curve is an example guess for the video; press Clear to draw your own. The overlay shows what actually happened, not the true counterfactual, which is unobservable.',
   devil: 'The more confident the room\'s drawings, the more it shows how much hidden assumption is baked into "China would have stayed poor".',
   mount(host, ctx) {
     let pad; const { ctl, viz, out } = std(host);
     ctl.append(btn('Reveal actual', reveal, 'red'), btn('Clear', () => { pad.clear(); setStats(out, []); }, 'ghost'));
-    function build_() { viz.innerHTML = ''; pad = drawPad(viz, { x0: 1990, x1: 2022, ymin: 0, ymax: 100, from: 1990, to: 2022, startVal: chinaRate()[yi(1990)], yfmt: v => v + '%' }); setStats(out, []); }
+    function build_() { viz.innerHTML = ''; pad = drawPad(viz, { x0: 1990, x1: 2022, ymin: 0, ymax: 100, from: 1990, to: 2022, startVal: chinaRate()[yi(1990)], yfmt: v => v + '%', prefill: [[1995, 80], [2000, 76], [2005, 70], [2010, 64], [2015, 58], [2022, 50]] }); setStats(out, []); }
     function reveal() {
       const f = a => ptsOf(a).filter(p => p[0] >= 1990);
       pad.reveal(f(chinaRate()), [{ pts: f(rateOf(S_rest(S.line))), color: C.gold2 }]);
@@ -2651,7 +2668,7 @@ M({
       setStats(out, [[g == null ? 'draw first' : fP(g, 0), 'your 2022 value', ''], [fP(r, 0), 'actual China 2022 (blue)', 's2'], [fP(rateOf(S_rest(S.line))[yi(2022)], 0), 'rest of world 2022 (gold dashed)', 's3']]);
     }
     let last = S.line; ctx.watch(() => { if (S.line !== last) { last = S.line; build_(); } }); build_();
-    host.append(note('Draw China without its reforms. Blue is what happened; the gold dashed line is the rest of the world, the closest thing to a comparison we have.', true));
+    host.append(note('An example guess (red) is pre-drawn: China without its reforms. Press <b>Clear</b> to draw your own. Blue is what happened; the gold dashed line is the rest of the world, the closest thing to a comparison we have.', true));
   }
 });
 
@@ -2668,7 +2685,7 @@ M({
   shows: 'Whether any open-but-unreformed economy matched China\'s poverty fall.', limits: 'Four hand-picked cases and a descriptive chart. Years of PIP coverage differ by country. Event dates are the commonly cited ones.',
   devil: 'Each country differs in size, starting level and timing; a single mismatch is an anecdote, not a refutation or a confirmation.',
   mount(host, ctx) {
-    let k = 'VNM'; const V_ = store.get('verdicts', {}); const { ctl, viz } = std(host);
+    let k = 'VNM'; const V_ = store.get('verdicts', null) || { VNM: 'Vietnam reformed and opened at the same time, so it supports "reform plus opening" rather than refuting our claim.', IND: 'India also combined reform and opening after 1991. Compare the pace of its fall (points per year) with China\'s before drawing a conclusion.', BGD: 'Check whether the fall tracks the export boom or other changes. On its own it does not isolate trade from policy.', MEX: 'Trade opening without a China-scale fall at the $3 line is our best counter-example to test; check the $8.30 line too.' }; const { ctl, viz } = std(host);
     ctl.append(seg(Object.entries(CASES).map(([c, v]) => [c, v.n]), k, v => { k = v; draw(); }));
     const a = h('div'), b = h('div'), t = h('div'); viz.append(a, b, t); a.append(h('h4', { style: { margin: 0 } }, 'Poverty rate')); b.append(h('h4', { style: { margin: '.6rem 0 0' } }, 'Trade as % of GDP'));
     const c1 = lineChart(a, { series: [] }), c2 = lineChart(b, { series: [] });
@@ -2676,7 +2693,7 @@ M({
       const cs = CASES[k], mk = cs.ev.map(([y, l], i) => ({ x: y, label: y + ' ' + l, color: C.gold2, row: i }));
       c1.update({ series: [{ name: cs.n, color: C.red, pts: ptsOf(rateOf(S_cty(k, S.line))), w: 3 }, { name: 'China', color: C.slate, pts: ptsOf(chinaRate()), dash: '6 4' }], xmin: 1981, xmax: 2022, ymax: 100, yfmt: v => v + '%', tipfmt: v => v.toFixed(1) + '%', markers: mk, h: 250, label: 'Poverty rate' });
       c2.update({ series: [{ name: cs.n, color: C.red, pts: ptsOf(D.trade[k] || []), w: 3 }, { name: 'China', color: C.slate, pts: ptsOf(D.trade.CHN), dash: '6 4' }], xmin: 1981, xmax: 2022, yfmt: v => v + '%', tipfmt: v => v.toFixed(0) + '%', markers: mk, h: 220, label: 'Trade/GDP' });
-      t.innerHTML = ''; t.append(h('div', { class: 'warn' }, h('b', null, 'What to check: '), cs.chk[0], h('br'), cs.chk[1]), h('label', { style: { fontWeight: 800 } }, 'Your verdict on ' + cs.n + ' (saved in this browser)'), h('textarea', { placeholder: 'Does this case break test 2, support it, or neither? Why?', onchange: e => { V_[k] = e.target.value; store.set('verdicts', V_); } }, V_[k] || ''));
+      t.innerHTML = ''; t.append(h('div', { class: 'warn' }, h('b', null, 'What to check: '), cs.chk[0], h('br'), cs.chk[1]), h('label', { style: { fontWeight: 800 } }, 'Your verdict on ' + cs.n + ' (starting draft, saved in this browser)'), h('textarea', { placeholder: 'Does this case break test 2, support it, or neither? Why?', onchange: e => { V_[k] = e.target.value; store.set('verdicts', V_); } }, V_[k] || ''));
       t.querySelector('textarea').value = V_[k] || '';
     }
     ctx.watch(draw); draw();
@@ -2688,12 +2705,13 @@ M({
   n: 81, slide: 13, when: 'On slide 13', type: 'game', title: 'Verdict dial',
   one: 'A triangle with Trade, Reform and Policy at its corners: place your team\'s verdict, collect the room\'s, and compare.',
   kw: 'ternary triangle verdict poll trade reform policy', src: ['team'],
-  shows: 'How the team and the room divide credit among three explanations.', limits: 'An opinion poll, not an estimate. Stored only in this browser.',
+  shows: 'How the team and the room divide credit among three explanations.', limits: 'The team verdict and audience dots are pre-filled examples for the video, not real votes. An opinion tool, not an estimate. Stored only in this browser.',
   devil: 'Forcing three shares to add to 100% hides that the three may be complements rather than rivals.',
   mount(host, ctx) {
-    const T = store.get('verdict', { team: null, votes: [] }); let pt = [0.34, 0.33, 0.33];
+    const V0 = { team: [0.25, 0.4, 0.35], votes: [[0.4, 0.3, 0.3], [0.35, 0.4, 0.25], [0.5, 0.25, 0.25], [0.3, 0.35, 0.35], [0.2, 0.5, 0.3], [0.45, 0.3, 0.25], [0.3, 0.3, 0.4], [0.25, 0.45, 0.3], [0.4, 0.35, 0.25], [0.35, 0.25, 0.4]] };
+    const T = store.get('verdict', null) || JSON.parse(JSON.stringify(V0)); let pt = [0.34, 0.33, 0.33];
     const { ctl, viz, out } = std(host);
-    ctl.append(btn('Add as audience vote', () => { T.votes.push(pt.slice()); store.set('verdict', T); draw(); }), btn('Lock as team verdict', () => { T.team = pt.slice(); store.set('verdict', T); draw(); }, 'ghost'), btn('Clear', () => { T.team = null; T.votes = []; store.set('verdict', T); draw(); }, 'ghost'));
+    ctl.append(btn('Add as audience vote', () => { T.votes.push(pt.slice()); store.set('verdict', T); draw(); }), btn('Lock as team verdict', () => { T.team = pt.slice(); store.set('verdict', T); draw(); }, 'ghost'), btn('Reset to examples', () => { Object.assign(T, JSON.parse(JSON.stringify(V0))); store.set('verdict', T); draw(); }, 'ghost'));
     const W = 460, H = 420, V = [[W / 2, 40], [40, H - 40], [W - 40, H - 40]], names = ['Trade / globalization', 'China\'s domestic reform', 'Targeted policy'], cols = [C.slate, C.red, C.gold2];
     const toXY = w => [sum(w.map((x, i) => x * V[i][0])), sum(w.map((x, i) => x * V[i][1]))];
     const fromXY = (x, y) => { const [a, b, c] = V, d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]); const l1 = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (y - c[1])) / d, l2 = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (y - c[1])) / d; let w = [l1, l2, 1 - l1 - l2].map(v => Math.max(0, v)); const s = sum(w) || 1; return w.map(v => v / s); };
@@ -2701,7 +2719,7 @@ M({
     function draw() {
       const s = sv('svg', { viewBox: `0 0 ${W} ${H}`, style: { width: 'min(520px,100%)', touchAction: 'none' } });
       s.append(sv('polygon', { points: V.map(p => p.join(',')).join(' '), fill: 'var(--soft)', stroke: C.ink, 'stroke-width': 2 }));
-      V.forEach((p, i) => s.append(sv('text', { x: p[0], y: p[1] + (i === 0 ? -14 : 22), 'text-anchor': 'middle', class: 'lbl-in', fill: cols[i], style: { fontSize: '13px' } }, names[i])));
+      V.forEach((p, i) => s.append(sv('text', { x: i === 0 ? p[0] : i === 1 ? 10 : W - 10, y: p[1] + (i === 0 ? -14 : 26), 'text-anchor': i === 0 ? 'middle' : i === 1 ? 'start' : 'end', class: 'lbl-in', fill: cols[i], style: { fontSize: '13px' } }, names[i])));
       T.votes.forEach(w => { const [x, y] = toXY(w); s.append(sv('circle', { cx: x, cy: y, r: 6, fill: C.mute, 'fill-opacity': 0.55 })); });
       if (T.votes.length) { const m = [0, 1, 2].map(i => avg(T.votes.map(w => w[i]))), [x, y] = toXY(m); s.append(sv('circle', { cx: x, cy: y, r: 10, fill: 'none', stroke: C.ink, 'stroke-width': 3 }), sv('text', { x: x + 14, y: y + 4, class: 'lbl-in' }, 'room average')); }
       if (T.team) { const [x, y] = toXY(T.team); s.append(sv('rect', { x: x - 8, y: y - 8, width: 16, height: 16, fill: C.red, transform: `rotate(45 ${x} ${y})` }), sv('text', { x: x + 14, y: y + 4, class: 'lbl-in', fill: C.red }, 'team')); }
@@ -2723,7 +2741,7 @@ M({
   devil: 'A shift toward your position after a presentation is expected; ask whether the room moved because of evidence or because of delivery.',
   mount(host) {
     const { ctl, out } = std(host); const tb = tugBar(host, { interactive: false }); host.insertBefore(tb.bar, out);
-    function paint() { const T = store.get('tug', { votes: [], before: null, after: null }); tb.render({ before: T.before, after: T.after }); setStats(out, [[T.before == null ? '–' : Math.round(T.before), 'BEFORE', 's3'], [T.after == null ? '–' : Math.round(T.after), 'AFTER', 's4'], [T.before != null && T.after != null ? fSign(T.after - T.before, 0) + ' pts' : '–', 'shift toward "China did it" (positive)', '']]); if (T.before == null && T.after == null) out.append(note('Nothing locked yet. Run the Tug-of-war bar at the start and end of the presentation.', true)); }
+    function paint() { const T = tugGet(); tb.render({ before: T.before, after: T.after }); setStats(out, [[T.before == null ? '–' : Math.round(T.before), 'BEFORE', 's3'], [T.after == null ? '–' : Math.round(T.after), 'AFTER', 's4'], [T.before != null && T.after != null ? fSign(T.after - T.before, 0) + ' pts' : '–', 'shift toward "China did it" (positive)', '']]); if (T.before == null && T.after == null) out.append(note('Nothing locked yet. Run the Tug-of-war bar at the start and end of the presentation.', true)); }
     ctl.append(btn('Refresh', paint, 'ghost'), btn('Open Tug-of-war', () => go('m29'), 'ghost')); paint();
   }
 });
@@ -2979,6 +2997,157 @@ M({
 });
 
 /* =====================================================================
+   STUDIO — camera bubble, microphone and screen recording
+   (all in the browser: nothing is uploaded anywhere)
+   ===================================================================== */
+const Studio = (() => {
+  const st = { cam: false, mic: true, camStream: null, micStream: null, size: store.get('camSize', 'M'), shape: store.get('camShape', 'circle'), recording: false, rec: null, chunks: [], camId: '', micId: '', raf: 0, ac: null, started: 0 };
+  const SIZES = { S: 150, M: 210, L: 300 };
+  const bubble = h('div', { id: 'cam', class: 'circle', title: 'Drag to move · double-click to change size' }, h('video', { autoplay: true, playsinline: true }));
+  const vid = bubble.firstChild; vid.muted = true;
+  document.body.append(bubble);
+  let panel, button, msg, camSel, micSel, meterBar, camSeg, micSeg, recBtn, sizeSeg, shapeSeg, hudCam, hudRec;
+
+  /* ----- camera bubble ----- */
+  function layout(initial) {
+    const w = SIZES[st.size], hh = st.shape === 'circle' ? w : Math.round(w * 0.75);
+    bubble.style.width = w + 'px'; bubble.style.height = hh + 'px';
+    bubble.className = st.shape === 'circle' ? 'circle' : 'round';
+    const pos = store.get('camPos', null);
+    let x = pos ? pos.x : innerWidth - w - 28, y = pos ? pos.y : innerHeight - hh - 96;
+    x = clamp(x, 0, Math.max(0, innerWidth - w)); y = clamp(y, 0, Math.max(0, innerHeight - hh));
+    bubble.style.left = x + 'px'; bubble.style.top = y + 'px';
+  }
+  (function drag() {
+    let down = false, ox = 0, oy = 0;
+    bubble.addEventListener('pointerdown', e => { down = true; bubble.setPointerCapture(e.pointerId); const r = bubble.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top; bubble.style.cursor = 'grabbing'; });
+    bubble.addEventListener('pointermove', e => { if (!down) return; const w = bubble.offsetWidth, hh = bubble.offsetHeight; bubble.style.left = clamp(e.clientX - ox, 0, innerWidth - w) + 'px'; bubble.style.top = clamp(e.clientY - oy, 0, innerHeight - hh) + 'px'; });
+    bubble.addEventListener('pointerup', () => { if (!down) return; down = false; bubble.style.cursor = 'grab'; store.set('camPos', { x: parseInt(bubble.style.left), y: parseInt(bubble.style.top) }); });
+    bubble.addEventListener('dblclick', () => { const k = ['S', 'M', 'L']; st.size = k[(k.indexOf(st.size) + 1) % 3]; store.set('camSize', st.size); sizeSeg && sizeSeg.set(st.size); layout(); });
+  })();
+  addEventListener('resize', () => layout());
+
+  const say = (t, bad) => { if (msg) { msg.textContent = t || ''; msg.style.color = bad ? 'var(--red2)' : 'var(--mute)'; } };
+  const errText = e => e && e.name === 'NotAllowedError' ? 'Permission was blocked. Allow it with the lock icon in the address bar, then try again.' : e && e.name === 'NotFoundError' ? 'No device found.' : (e && e.message) || 'Something went wrong.';
+
+  async function listDevices() {
+    try {
+      const d = await navigator.mediaDevices.enumerateDevices();
+      const fill = (sel_, kind, cur) => { if (!sel_) return; sel_.innerHTML = ''; d.filter(x => x.kind === kind).forEach((x, i) => sel_.append(h('option', { value: x.deviceId, selected: x.deviceId === cur }, x.label || `${kind === 'videoinput' ? 'Camera' : 'Microphone'} ${i + 1}`))); };
+      fill(camSel, 'videoinput', st.camId); fill(micSel, 'audioinput', st.micId);
+    } catch (e) { /* ignore */ }
+  }
+  async function camOn() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { say('Camera is not available in this browser or context (needs https).', true); return false; }
+    try {
+      camOff(true);
+      st.camStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: st.camId ? { exact: st.camId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+      vid.srcObject = st.camStream; await vid.play().catch(() => {});
+      st.cam = true; bubble.style.display = 'block'; layout(); say(''); listDevices(); sync(); return true;
+    } catch (e) { st.cam = false; sync(); say(errText(e), true); return false; }
+  }
+  function camOff(keep) { if (st.camStream) st.camStream.getTracks().forEach(t => t.stop()); st.camStream = null; vid.srcObject = null; if (!keep) { st.cam = false; bubble.style.display = 'none'; sync(); } }
+  async function micOn() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { say('Microphone is not available in this browser or context (needs https).', true); return false; }
+    try {
+      micOff(true);
+      st.micStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: st.micId ? { exact: st.micId } : undefined, echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+      st.mic = true; say(''); listDevices(); meter(); sync(); return true;
+    } catch (e) { st.mic = false; sync(); say(errText(e), true); return false; }
+  }
+  function micOff(keep) { cancelAnimationFrame(st.raf); if (st.ac) { st.ac.close().catch(() => {}); st.ac = null; } if (st.micStream) st.micStream.getTracks().forEach(t => t.stop()); st.micStream = null; if (meterBar) meterBar.style.width = '0'; if (!keep) { st.mic = false; sync(); } }
+  function meter() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; st.ac = new AC(); const an = st.ac.createAnalyser(); an.fftSize = 512;
+      st.ac.createMediaStreamSource(st.micStream).connect(an); const buf = new Uint8Array(an.fftSize);
+      const loop = () => { an.getByteTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128)); if (meterBar) meterBar.style.width = Math.min(100, m / 128 * 220) + '%'; st.raf = requestAnimationFrame(loop); };
+      loop();
+    } catch (e) { /* meter is optional */ }
+  }
+
+  /* ----- recording ----- */
+  const pickMime = () => ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+  function toast(t, ms = 5000) { const el = h('div', { class: 'toast' }, t); document.body.append(el); setTimeout(() => el.remove(), ms); }
+  function countdown(n) {
+    return new Promise(res => {
+      const el = h('div', { class: 'countdown' }, String(n)); document.body.append(el);
+      let k = n; const t = setInterval(() => { k--; if (k <= 0) { clearInterval(t); el.remove(); res(); } else el.textContent = String(k); }, 1000);
+    });
+  }
+  async function startRec() {
+    if (st.recording) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || !window.MediaRecorder) { say('Screen recording is not supported in this browser. Use desktop Chrome, Edge or Safari.', true); open(); return; }
+    let disp;
+    try {
+      say('Choose "This tab" in the browser prompt…');
+      disp = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false, preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude' });
+    } catch (e) { say(e && e.name === 'NotAllowedError' ? 'Recording was cancelled.' : errText(e), true); return; }
+    if (st.mic && !st.micStream) await micOn();
+    const tracks = [...disp.getVideoTracks(), ...(st.micStream && st.mic ? st.micStream.getAudioTracks() : [])];
+    const stream = new MediaStream(tracks), mime = pickMime();
+    let rec; try { rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6e6 } : undefined); } catch (e) { disp.getTracks().forEach(t => t.stop()); say(errText(e), true); return; }
+    st.rec = rec; st.chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) st.chunks.push(e.data); };
+    rec.onstop = () => {
+      disp.getTracks().forEach(t => t.stop());
+      const type = (rec.mimeType || mime || 'video/webm').split(';')[0], ext = type.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(st.chunks, { type }); st.lastBlobSize = blob.size;
+      const d = new Date(), name = `econ223-presentation-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}.${ext}`;
+      const a = h('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      st.recording = false; st.rec = null; document.body.classList.remove('recording'); togglePresent(false); sync();
+      const secs = Math.round((Date.now() - st.started) / 1000);
+      toast(`Saved ${name} (${Math.floor(secs / 60)}m ${secs % 60}s). Check your Downloads folder.`);
+    };
+    disp.getVideoTracks()[0].addEventListener('ended', () => { if (st.recording) stopRec(); });
+    closePanel(); togglePresent(true); document.body.classList.add('recording');
+    await countdown(3);
+    st.started = Date.now(); st.recording = true; rec.start(1000); sync();
+  }
+  function stopRec() { if (st.rec && st.rec.state !== 'inactive') st.rec.stop(); }
+  const toggleRec = () => st.recording ? stopRec() : startRec();
+
+  /* ----- UI ----- */
+  function sync() {
+    if (camSeg) camSeg.set(st.cam ? 'on' : 'off'); if (micSeg) micSeg.set(st.mic ? 'on' : 'off');
+    if (recBtn) { recBtn.textContent = st.recording ? 'Stop and save' : 'Start recording'; recBtn.classList.toggle('rec', !st.recording); }
+    if (hudCam) hudCam.classList.toggle('on', st.cam);
+    if (hudRec) { hudRec.textContent = st.recording ? '■ Stop' : '● Rec'; hudRec.classList.toggle('on', st.recording); }
+    if (button) button.classList.toggle('on', st.cam || st.recording);
+  }
+  function open() { panel.classList.add('open'); listDevices(); if (st.mic && !st.micStream) micOn(); }
+  function closePanel() { panel && panel.classList.remove('open'); }
+  function init(icon) {
+    button = h('button', { class: 'pill', type: 'button', title: 'Camera, microphone and recording (R)', html: icon + '<span class="lbl">Studio</span>', onclick: e => { e.stopPropagation(); panel.classList.contains('open') ? closePanel() : (setPanel && setPanel.classList.remove('open'), open()); } });
+    msg = h('div', { style: { fontSize: '.8rem', color: 'var(--mute)', minHeight: '1.1rem' } });
+    camSeg = seg([['off', 'Off'], ['on', 'On']], 'off', v => v === 'on' ? camOn() : camOff());
+    micSeg = seg([['off', 'Off'], ['on', 'On']], 'on', v => v === 'on' ? micOn() : micOff());
+    sizeSeg = seg([['S', 'S'], ['M', 'M'], ['L', 'L']], st.size, v => { st.size = v; store.set('camSize', v); layout(); });
+    shapeSeg = seg([['circle', 'Circle'], ['round', 'Rounded']], st.shape, v => { st.shape = v; store.set('camShape', v); layout(); });
+    camSel = h('select', { 'aria-label': 'Camera', onchange: e => { st.camId = e.target.value; if (st.cam) camOn(); } }, h('option', null, 'Default camera'));
+    micSel = h('select', { 'aria-label': 'Microphone', onchange: e => { st.micId = e.target.value; if (st.mic && st.micStream) micOn(); } }, h('option', null, 'Default microphone'));
+    meterBar = h('i'); const m = h('div', { class: 'meter' }, meterBar);
+    recBtn = btn('Start recording', () => toggleRec(), 'red rec'); recBtn.style.width = '100%';
+    const grp = (l, ...c) => h('div', null, h('span', { class: 'lab' }, l), ...c);
+    panel = h('div', { class: 'setp', id: 'studio', onclick: e => e.stopPropagation() },
+      grp('Camera', h('div', { class: 'srow' }, camSeg), h('div', { style: { marginTop: '.4rem' } }, camSel)),
+      grp('Camera bubble', h('div', { class: 'srow' }, sizeSeg, shapeSeg), h('div', { style: { fontSize: '.76rem', color: 'var(--mute)', marginTop: '.3rem' } }, 'Drag it anywhere. Double-click to change size.')),
+      grp('Microphone', h('div', { class: 'srow' }, micSeg), h('div', { style: { marginTop: '.4rem' } }, micSel), h('div', { style: { marginTop: '.5rem' } }, m)),
+      recBtn, msg,
+      h('div', { style: { fontSize: '.76rem', color: 'var(--mute)', lineHeight: 1.4 } }, 'Recording saves a video of this tab with your voice and the camera bubble, right in your browser. Pick "This tab" when asked. Press ', h('kbd', null, 'R'), ' or the browser\'s Stop sharing button to finish. The file lands in Downloads.'));
+    document.addEventListener('click', e => { if (panel && !panel.contains(e.target) && !button.contains(e.target)) closePanel(); });
+    sync();
+    return { button, panel };
+  }
+  function hudButtons() {
+    hudCam = h('button', { type: 'button', onclick: () => st.cam ? camOff() : camOn() }, 'Cam');
+    hudRec = h('button', { type: 'button', onclick: () => toggleRec() }, '● Rec');
+    return [hudCam, hudRec];
+  }
+  layout();
+  return { init, hudButtons, toggleRec, toggleCam: () => st.cam ? camOff() : camOn(), close: closePanel, state: st, camOn, micOn, startRec, stopRec };
+})();
+
+/* =====================================================================
    BOOT — slide-deck shell: thumbnail rail (left), slide (right),
    settings drawer, notes, router, palette, presenter tools, keys
    ===================================================================== */
@@ -2998,7 +3167,7 @@ let current = null; // {mod, ctx}
 document.documentElement.dataset.theme = store.get('theme', null) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 function toggleTheme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; store.set('theme', t); }
 const svgI = d => `<svg viewBox="0 0 16 16" aria-hidden="true">${d}</svg>`;
-const ICON = { search: svgI('<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>'), sliders: svgI('<path d="M2 5h12M2 11h12"/><circle cx="10" cy="5" r="1.7" fill="var(--bg)"/><circle cx="6" cy="11" r="1.7" fill="var(--bg)"/>'), present: svgI('<rect x="2" y="2.5" width="12" height="8" rx="1.5"/><path d="M8 10.5V14M5.5 14h5"/>'), theme: svgI('<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor"/>'), menu: svgI('<path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>') };
+const ICON = { search: svgI('<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>'), sliders: svgI('<path d="M2 5h12M2 11h12"/><circle cx="10" cy="5" r="1.7" fill="var(--bg)"/><circle cx="6" cy="11" r="1.7" fill="var(--bg)"/>'), present: svgI('<rect x="2" y="2.5" width="12" height="8" rx="1.5"/><path d="M8 10.5V14M5.5 14h5"/>'), theme: svgI('<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor"/>'), menu: svgI('<path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>'), cam: svgI('<rect x="1.5" y="4" width="9" height="8" rx="2"/><path d="M10.5 7l4-2v6l-4-2z"/>') };
 
 /* ---------- top bar + settings drawer ---------- */
 let themeBtn, presBtn, setBtn, setPanel, swLine, swMode, swChina, rY0, rY1, whoSel;
@@ -3006,10 +3175,11 @@ function buildHeader() {
   const menu = h('button', { class: 'pill menu', type: 'button', onclick: () => document.body.classList.toggle('nav-open'), 'aria-label': 'Show slide list', html: ICON.menu });
   const brand = h('div', { class: 'brand', onclick: () => go(''), role: 'link' }, 'Econ 223 ', h('i', null, 'Kit'));
   const search = h('button', { class: 'pill', type: 'button', onclick: () => openPalette(), title: 'Search (/)', html: ICON.search + '<span class="lbl">Search</span><kbd>/</kbd>' });
-  setBtn = h('button', { class: 'pill', type: 'button', onclick: e => { e.stopPropagation(); setPanel.classList.toggle('open'); }, title: 'Poverty line, view, years' });
+  setBtn = h('button', { class: 'pill', type: 'button', onclick: e => { e.stopPropagation(); Studio.close(); setPanel.classList.toggle('open'); }, title: 'Poverty line, view, years' });
   presBtn = h('button', { class: 'pill', type: 'button', onclick: () => togglePresent(), title: 'Presenter mode (P)', html: ICON.present + '<span class="lbl">Present</span>' });
   themeBtn = h('button', { class: 'pill ghost', type: 'button', onclick: toggleTheme, title: 'Light / dark', 'aria-label': 'Toggle light or dark', html: ICON.theme });
-  topEl.append(menu, brand, search, setBtn, presBtn, themeBtn);
+  const studio = Studio.init(ICON.cam);
+  topEl.append(menu, brand, search, setBtn, studio.button, presBtn, themeBtn);
 
   swLine = seg([[3, '$3.00'], [4.2, '$4.20'], [8.3, '$8.30']], S.line, v => setS({ line: +v }));
   swMode = seg([['count', 'People'], ['rate', 'Share']], S.mode, v => setS({ mode: v }));
@@ -3023,7 +3193,7 @@ function buildHeader() {
     grp('Years', h('div', { class: 'yrs' }, rY0, rY1)),
     grp('Show only slides pinned for', whoSel),
     h('button', { class: 'btn ghost', type: 'button', onclick: () => setS({ line: 3, mode: 'count', china: true, y0: 1990, y1: 2022 }) }, '↺ Back to the deck\'s defaults'));
-  topEl.append(setPanel);
+  topEl.append(setPanel, studio.panel);
   document.addEventListener('click', e => { if (!setPanel.contains(e.target) && !setBtn.contains(e.target)) setPanel.classList.remove('open'); });
 }
 function openSettings() { setPanel.classList.add('open'); setPanel.classList.remove('flash'); void setPanel.offsetWidth; setPanel.classList.add('flash'); }
@@ -3127,7 +3297,7 @@ function buildHud() {
   const bL = h('button', { type: 'button', onclick: () => { PRES.laser = !PRES.laser; bL.classList.toggle('on', PRES.laser); laser.style.display = PRES.laser ? 'block' : 'none'; } }, 'Laser');
   const bP = h('button', { type: 'button', onclick: () => { PRES.pen = !PRES.pen; bP.classList.toggle('on', PRES.pen); ink.style.display = PRES.pen ? 'block' : 'none'; sizeInk(); } }, 'Pen');
   const bC = h('button', { type: 'button', onclick: () => ictx.clearRect(0, 0, ink.width, ink.height) }, 'Clear');
-  hud.append(h('button', { type: 'button', onclick: () => step(-1) }, '◀'), h('button', { type: 'button', onclick: () => step(1) }, '▶'), time, bT, bR, bL, bP, bC, h('button', { type: 'button', onclick: () => togglePresent(false) }, 'Exit'));
+  hud.append(h('button', { type: 'button', onclick: () => step(-1) }, '◀'), h('button', { type: 'button', onclick: () => step(1) }, '▶'), time, bT, bR, bL, bP, bC, ...Studio.hudButtons(), h('button', { type: 'button', onclick: () => togglePresent(false) }, 'Exit'));
   addEventListener('pointermove', e => { if (PRES.laser) { laser.style.left = e.clientX + 'px'; laser.style.top = e.clientY + 'px'; } });
   let drawing = false, lx = 0, ly = 0;
   ink.addEventListener('pointerdown', e => { drawing = true; ink.setPointerCapture(e.pointerId); lx = e.clientX; ly = e.clientY; });
@@ -3145,11 +3315,13 @@ function togglePresent(force) {
 /* ---------- keyboard ---------- */
 addEventListener('keydown', e => {
   const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-  if (e.key === 'Escape') { if (palEl) closePalette(); else if (popEl) closePop(); else if (setPanel.classList.contains('open')) setPanel.classList.remove('open'); else if (document.body.classList.contains('present')) togglePresent(false); return; }
+  if (e.key === 'Escape') { Studio.close(); if (palEl) closePalette(); else if (popEl) closePop(); else if (setPanel.classList.contains('open')) setPanel.classList.remove('open'); else if (document.body.classList.contains('present')) togglePresent(false); return; }
   if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === '/') { e.preventDefault(); openPalette(); }
   else if (e.key === 'p' || e.key === 'P') togglePresent();
   else if (e.key === 'd' || e.key === 'D') setS({ devil: !S.devil });
+  else if (e.key === 'r' || e.key === 'R') Studio.toggleRec();
+  else if (e.key === 'c' || e.key === 'C') Studio.toggleCam();
   else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); step(-1); }
   else if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); step(1); }
 });
