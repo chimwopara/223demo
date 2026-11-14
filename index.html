@@ -3065,6 +3065,15 @@ M({
     ctl.append(seg([['cum', 'Total growth, 1988–2008'], ['pa', 'Per year']], mode, v => { mode = v; draw(); }), sl, chk('Highlight groups', groups, v => { groups = v; draw(); }));
     const ch = lineChart(viz, { series: [] });
     const conv = g => mode === 'pa' ? elePA(g) : g;
+    const nearest = x => ELEPHANT.reduce((bi, e, i) => Math.abs(e[0] - x) < Math.abs(ELEPHANT[bi][0] - x) ? i : bi, 0);
+    function stats() {
+      const [p, g] = ELEPHANT[idx], diff = g - ELE_MEAN, above = ELEPHANT.filter(e => e[1] > ELE_MEAN).length;
+      setStats(out, [
+        [g.toFixed(0) + '%', `total income growth at ${eleLabel(p)}`, ''],
+        [elePA(g).toFixed(1) + '%', 'the same, per year', 's2'],
+        [(diff >= 0 ? '+' : '−') + Math.abs(diff).toFixed(0) + ' pts', diff >= 0 ? 'above the world mean (24%)' : 'below the world mean (24%)', 's3'],
+        [`${above} of ${ELEPHANT.length}`, 'groups grew faster than the mean', 's4']]);
+    }
     function draw() {
       const [p, g] = ELEPHANT[idx], mean = conv(ELE_MEAN);
       const sm = innerWidth < 700, bands = groups ? [
@@ -3077,18 +3086,13 @@ M({
           { name: `World mean (${mode === 'pa' ? '1.1% a year' : '24.3%'})`, color: C.gold2, dash: '6 4', pts: [[5, mean], [100, mean]], w: 2 }],
         xmin: 5, xmax: 100, ymin: 0, xticks: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100], xfmt: v => v === 100 ? 'Top 1%' : v, yfmt: v => (mode === 'pa' ? v.toFixed(1) : v) + '%',
         xtitle: 'Percentile of the global income distribution (poorest on the left)', ytitle: mode === 'pa' ? 'Income growth per year' : 'Cumulative income growth 1988–2008',
-        bands, markers: [{ x: p, color: C.ink, dash: '', row: 1, label: p === 100 ? 'Top 1%' : 'P' + p }], tipTitle: x => x === 100 ? 'Top 1%' : x === 99 ? 'P95 to P99' : 'Percentile ' + x,
+        bands, drag: { value: p, min: 5, max: 100, snap: 1, fmt: v => { const q = ELEPHANT[nearest(v)][0]; return q === 100 ? 'Top 1%' : 'P' + q; }, onChange: v => { idx = nearest(v); sl.set(idx); stats(); } }, tipTitle: x => x === 100 ? 'Top 1%' : x === 99 ? 'P95 to P99' : 'Percentile ' + x,
         tipExtra: x => { const e = ELEPHANT.find(q => q[0] === x); return e ? `<div>${mode === 'pa' ? 'Total: ' + e[1].toFixed(0) + '%' : 'Per year: ' + elePA(e[1]).toFixed(1) + '%'}</div>` : ''; }, h: 360, label: 'Global growth incidence curve 1988 to 2008'
       });
-      const diff = g - ELE_MEAN, above = ELEPHANT.filter(e => e[1] > ELE_MEAN).length;
-      setStats(out, [
-        [g.toFixed(0) + '%', `total income growth at ${eleLabel(p)}`, ''],
-        [elePA(g).toFixed(1) + '%', 'the same, per year', 's2'],
-        [(diff >= 0 ? '+' : '−') + Math.abs(diff).toFixed(0) + ' pts', diff >= 0 ? 'above the world mean (24%)' : 'below the world mean (24%)', 's3'],
-        [`${above} of ${ELEPHANT.length}`, 'groups grew faster than the mean', 's4']]);
+      stats();
     }
     draw();
-    host.append(note('Reading the shape: the left part is the global poor and the rising middle (many in Asia), the dip is the lower middle of rich countries, and the tip of the trunk is the top 1%. Slide the percentile marker or hover any point.', true));
+    host.append(note('Reading the shape: the left part is the global poor and the rising middle (many in Asia), the dip is the lower middle of rich countries, and the tip of the trunk is the top 1%. Drag the marker along the curve (or use the percentile slider), and hover any point for its exact value.', true));
   }
 });
 
